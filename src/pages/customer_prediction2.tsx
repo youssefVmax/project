@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Papa from 'papaparse';
 import { motion } from 'framer-motion';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -6,201 +7,413 @@ import {
 } from 'recharts';
 import { 
   TrendingUp, Brain, Target, Calendar, DollarSign, BarChart3, 
-  Zap, AlertCircle, CheckCircle, ArrowUp, ArrowDown, Users, Clock, Shield, Award, Star
+  Zap, AlertCircle, CheckCircle, ArrowUp, ArrowDown, Users, Clock, Shield, Award, Star,
+  Crown, Activity, Package, Globe
 } from 'lucide-react';
 
-// Historical data for April, May, June 2025 - based on your columns
-const historicalData = [
-  { 
-    month: 'Apr 2025',
-    new_customers: 58,
-    total_revenue: 16200,
-    avg_amount_paid: 279,
-    avg_duration_months: 6.8,
-    long_term_customers: 26,
-    churn_rate: 0.09,
-    ibo_players: 31,
-    bob_players: 19,
-    smarters: 15,
-    ibo_pro: 12,
-    avg_customer_age_days: 95,
-    service_premium: 28,
-    service_standard: 22,
-    service_basic: 8
-  },
-  { 
-    month: 'May 2025',
-    new_customers: 63,
-    total_revenue: 18500,
-    avg_amount_paid: 294,
-    avg_duration_months: 7.2,
-    long_term_customers: 32,
-    churn_rate: 0.07,
-    ibo_players: 35,
-    bob_players: 21,
-    smarters: 18,
-    ibo_pro: 14,
-    avg_customer_age_days: 102,
-    service_premium: 32,
-    service_standard: 24,
-    service_basic: 7
-  },
-  { 
-    month: 'Jun 2025',
-    new_customers: 51,
-    total_revenue: 15800,
-    avg_amount_paid: 310,
-    avg_duration_months: 7.5,
-    long_term_customers: 28,
-    churn_rate: 0.11,
-    ibo_players: 27,
-    bob_players: 16,
-    smarters: 14,
-    ibo_pro: 10,
-    avg_customer_age_days: 88,
-    service_premium: 25,
-    service_standard: 19,
-    service_basic: 7
-  }
-];
+const CSV_PATH = '/data/Three-month-dashboard-R.csv';
 
-// Sales agents and closers performance data
-const agentPerformanceData = [
-  // Sales Agents
-  { name: 'Sarah Martinez', role: 'Sales Agent', deals: 28, revenue: 8400, avg_deal: 300, conversion_rate: 0.24, predicted_next_month: 32 },
-  { name: 'David Chen', role: 'Sales Agent', deals: 25, revenue: 7750, avg_deal: 310, conversion_rate: 0.21, predicted_next_month: 29 },
-  { name: 'Emma Rodriguez', role: 'Sales Agent', deals: 31, revenue: 8990, avg_deal: 290, conversion_rate: 0.26, predicted_next_month: 35 },
-  { name: 'Michael Johnson', role: 'Sales Agent', deals: 22, revenue: 6820, avg_deal: 310, conversion_rate: 0.19, predicted_next_month: 26 },
-  { name: 'Lisa Wang', role: 'Sales Agent', deals: 29, revenue: 8700, avg_deal: 300, conversion_rate: 0.23, predicted_next_month: 33 },
-  
-  // Closing Agents
-  { name: 'Alex Thompson', role: 'Closer', deals: 35, revenue: 12250, avg_deal: 350, conversion_rate: 0.31, predicted_next_month: 40 },
-  { name: 'Jessica Brown', role: 'Closer', deals: 32, revenue: 11520, avg_deal: 360, conversion_rate: 0.29, predicted_next_month: 37 },
-  { name: 'Ryan Mitchell', role: 'Closer', deals: 38, revenue: 13300, avg_deal: 350, conversion_rate: 0.33, predicted_next_month: 43 },
-  { name: 'Sofia Garcia', role: 'Closer', deals: 30, revenue: 10800, avg_deal: 360, conversion_rate: 0.27, predicted_next_month: 35 },
-  { name: 'Kevin Lee', role: 'Closer', deals: 33, revenue: 11880, avg_deal: 360, conversion_rate: 0.30, predicted_next_month: 38 }
-];
+interface SalesRow {
+  signup_date: string;
+  end_date: string;
+  customer_name: string;
+  email: string;
+  phone_clean: string;
+  country: string;
+  amount_paid: number;
+  paid_per_month: number;
+  duration_months_cleaned: number;
+  is_long_term: boolean;
+  days_used_estimated: number;
+  customer_age_days: number;
+  sales_agent: string;
+  closing_agent: string;
+  sales_team: string;
+  product_type: string;
+  service_tier: string;
+  subscription_duration: string;
+  data_month: string;
+  data_year: string;
+  invoice_link: string;
+  is_ibo_player: boolean;
+  is_bob_player: boolean;
+  is_smarters: boolean;
+  is_ibo_pro: boolean;
+  on_end_date: boolean;
+  days_remaining: number;
+  paid_per_day: number;
+  duration_mean_paid: number;
+  agent_avg_paid: number;
+  is_above_avg: boolean;
+  paid_rank: number;
+}
 
-// Team performance aggregations
-const teamPerformance = {
-  sales_agents: agentPerformanceData.filter(a => a.role === 'Sales Agent'),
-  closers: agentPerformanceData.filter(a => a.role === 'Closer')
-};
+function parseNumber(val: string | number): number {
+  const num = Number(val);
+  return isNaN(num) ? 0 : num;
+}
 
-// Generate predictions using trend analysis and seasonal adjustments
-const generatePredictions = (data: any[], months: number) => {
-  const predictions = [];
-  const recentData = data.slice(-3); // Use all 3 months for trend
+function transformRow(row: any): SalesRow {
+  return {
+    signup_date: row.signup_date || '',
+    end_date: row.end_date || '',
+    customer_name: row.customer_name || '',
+    email: row.email || '',
+    phone_clean: row.phone_clean || '',
+    country: row.country || '',
+    amount_paid: parseNumber(row.amount_paid),
+    paid_per_month: parseNumber(row.paid_per_month),
+    duration_months_cleaned: parseNumber(row.duration_months_cleaned),
+    is_long_term: row.is_long_term === 'true',
+    days_used_estimated: parseNumber(row.days_used_estimated),
+    customer_age_days: parseNumber(row.customer_age_days),
+    sales_agent: row.sales_agent || '',
+    closing_agent: row.closing_agent || '',
+    sales_team: row.sales_team || '',
+    product_type: row.product_type || '',
+    service_tier: row.service_tier || '',
+    subscription_duration: row.subscription_duration || '',
+    data_month: row.data_month || '',
+    data_year: row.data_year || '',
+    invoice_link: row.invoice_link || '',
+    is_ibo_player: row.is_ibo_player === 'true',
+    is_bob_player: row.is_bob_player === 'true',
+    is_smarters: row.is_smarters === 'true',
+    is_ibo_pro: row.is_ibo_pro === 'true',
+    on_end_date: row.on_end_date === 'true',
+    days_remaining: parseNumber(row.days_remaining),
+    paid_per_day: parseNumber(row.paid_per_day),
+    duration_mean_paid: parseNumber(row.duration_mean_paid),
+    agent_avg_paid: parseNumber(row.agent_avg_paid),
+    is_above_avg: row.is_above_avg === 'true',
+    paid_rank: parseNumber(row.paid_rank)
+  };
+}
+
+interface MonthlyData {
+  month: string;
+  year: string;
+  total_customers: number;
+  total_revenue: number;
+  avg_amount_paid: number;
+  avg_duration_months: number;
+  long_term_customers: number;
+  ibo_players: number;
+  bob_players: number;
+  smarters: number;
+  ibo_pro: number;
+  service_premium: number;
+  service_standard: number;
+  service_basic: number;
+  avg_customer_age_days: number;
+  total_commission: number;
+  unique_agents: number;
+  unique_closers: number;
+  countries_count: number;
+}
+
+interface PredictionData extends MonthlyData {
+  confidence: number;
+  type: 'historical' | 'prediction';
+}
+
+// Generate predictions based on historical trends
+const generatePredictions = (historicalData: MonthlyData[], months: number): PredictionData[] => {
+  if (historicalData.length === 0) return [];
   
-  // Calculate growth rates for key metrics
-  const customerGrowth = (recentData[2].new_customers - recentData[0].new_customers) / recentData[0].new_customers / 2;
-  const revenueGrowth = (recentData[2].total_revenue - recentData[0].total_revenue) / recentData[0].total_revenue / 2;
-  const churnTrend = (recentData[2].churn_rate - recentData[0].churn_rate) / 2;
+  const predictions: PredictionData[] = [];
+  const recentData = historicalData.slice(-3); // Use last 3 months for trend analysis
   
-  const lastMonth = data[data.length - 1];
-  const monthNames = ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-  const currentMonthIndex = 0; // Starting from July 2025
+  // Calculate growth rates
+  const customerGrowth = recentData.length >= 2 ? 
+    (recentData[recentData.length - 1].total_customers - recentData[0].total_customers) / recentData[0].total_customers / (recentData.length - 1) : 0.05;
+  const revenueGrowth = recentData.length >= 2 ? 
+    (recentData[recentData.length - 1].total_revenue - recentData[0].total_revenue) / recentData[0].total_revenue / (recentData.length - 1) : 0.08;
+  
+  const lastMonth = historicalData[historicalData.length - 1];
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  
+  // Start predictions from July 2025 (after June 2025)
+  let currentYear = 2025;
+  let currentMonthIndex = 6; // July = index 6
   
   for (let i = 1; i <= months; i++) {
-    const monthIndex = (currentMonthIndex + i - 1) % 12;
-    // Seasonal factors - higher in Q1 and Q4, lower in summer months
-    const seasonalFactor = monthIndex >= 6 || monthIndex < 3 ? 1.1 : monthIndex >= 3 && monthIndex < 6 ? 0.95 : 0.85;
+    // Seasonal factors - higher growth in Q4 and Q1, moderate in Q2/Q3
+    const seasonalFactor = currentMonthIndex >= 9 || currentMonthIndex <= 2 ? 1.15 : 
+                          currentMonthIndex >= 3 && currentMonthIndex <= 5 ? 1.05 : 0.95;
     
-    const predictedCustomers = Math.round(lastMonth.new_customers * (1 + customerGrowth * i) * seasonalFactor);
+    const predictedCustomers = Math.round(lastMonth.total_customers * (1 + customerGrowth * i) * seasonalFactor);
     const predictedRevenue = Math.round(lastMonth.total_revenue * (1 + revenueGrowth * i) * seasonalFactor);
-    const predictedChurn = Math.max(0.05, Math.min(0.25, lastMonth.churn_rate + churnTrend * i));
     const predictedAvgPaid = Math.round(predictedRevenue / predictedCustomers);
     
-    // Product distribution based on trends
-    const iboPlayers = Math.round(predictedCustomers * 0.53);
-    const bobPlayers = Math.round(predictedCustomers * 0.31);
-    const smarters = Math.round(predictedCustomers * 0.27);
-    const iboPro = Math.round(predictedCustomers * 0.20);
+    // Product distribution based on historical ratios
+    const iboRatio = lastMonth.ibo_players / lastMonth.total_customers;
+    const bobRatio = lastMonth.bob_players / lastMonth.total_customers;
+    const smartersRatio = lastMonth.smarters / lastMonth.total_customers;
+    const iboProRatio = lastMonth.ibo_pro / lastMonth.total_customers;
     
-    const yearSuffix = monthIndex >= 6 ? '2025' : '2026'; // July-Dec 2025, Jan-Jun 2026
+    // Service tier distribution
+    const premiumRatio = lastMonth.service_premium / lastMonth.total_customers;
+    const standardRatio = lastMonth.service_standard / lastMonth.total_customers;
+    const basicRatio = lastMonth.service_basic / lastMonth.total_customers;
     
     predictions.push({
-      month: `${monthNames[monthIndex]} ${yearSuffix}`,
-      new_customers: predictedCustomers,
+      month: monthNames[currentMonthIndex],
+      year: currentYear.toString(),
+      total_customers: predictedCustomers,
       total_revenue: predictedRevenue,
       avg_amount_paid: predictedAvgPaid,
       avg_duration_months: Math.round((lastMonth.avg_duration_months + i * 0.1) * 10) / 10,
-      long_term_customers: Math.round(predictedCustomers * 0.55),
-      churn_rate: Math.round(predictedChurn * 100) / 100,
-      ibo_players: iboPlayers,
-      bob_players: bobPlayers,
-      smarters: smarters,
-      ibo_pro: iboPro,
-      avg_customer_age_days: Math.round(lastMonth.avg_customer_age_days + i * 5),
-      service_premium: Math.round(predictedCustomers * 0.49),
-      service_standard: Math.round(predictedCustomers * 0.37),
-      service_basic: Math.round(predictedCustomers * 0.14),
-      confidence: Math.max(0.5, 0.9 - i * 0.08),
-      type: 'prediction'
+      long_term_customers: Math.round(predictedCustomers * 0.6), // Assume 60% long-term
+      ibo_players: Math.round(predictedCustomers * iboRatio),
+      bob_players: Math.round(predictedCustomers * bobRatio),
+      smarters: Math.round(predictedCustomers * smartersRatio),
+      ibo_pro: Math.round(predictedCustomers * iboProRatio),
+      service_premium: Math.round(predictedCustomers * premiumRatio),
+      service_standard: Math.round(predictedCustomers * standardRatio),
+      service_basic: Math.round(predictedCustomers * basicRatio),
+      avg_customer_age_days: Math.round(lastMonth.avg_customer_age_days + i * 3),
+      total_commission: Math.round(predictedRevenue * 0.12), // Assume 12% commission rate
+      unique_agents: lastMonth.unique_agents + Math.floor(i / 3), // Add agents gradually
+      unique_closers: lastMonth.unique_closers + Math.floor(i / 4), // Add closers gradually
+      countries_count: lastMonth.countries_count + Math.floor(i / 6), // Expand to new countries
+      confidence: Math.max(0.5, 0.95 - i * 0.08), // Decreasing confidence over time
+      type: 'prediction' as const
     });
+    
+    // Move to next month
+    currentMonthIndex++;
+    if (currentMonthIndex > 11) {
+      currentMonthIndex = 0;
+      currentYear++;
+    }
   }
   
   return predictions;
 };
 
 const CustomerPrediction: React.FC = () => {
+  const [salesData, setSalesData] = useState<SalesRow[]>([]);
+  const [historicalData, setHistoricalData] = useState<MonthlyData[]>([]);
   const [predictionMonths, setPredictionMonths] = useState(6);
   const [selectedMetric, setSelectedMetric] = useState('total_revenue');
-  const [predictions, setPredictions] = useState<any[]>([]);
-  const [combinedData, setCombinedData] = useState<any[]>([]);
+  const [predictions, setPredictions] = useState<PredictionData[]>([]);
+  const [combinedData, setCombinedData] = useState<PredictionData[]>([]);
+  const [loading, setLoading] = useState(true);
 
+  // Load CSV data
   useEffect(() => {
+    fetch(CSV_PATH)
+      .then(response => response.text())
+      .then(csvText => {
+        Papa.parse(csvText, {
+          header: true,
+          skipEmptyLines: true,
+          complete: (results: Papa.ParseResult<any>) => {
+            const rows: SalesRow[] = results.data
+              .map((row: any) => transformRow(row))
+              .filter((row: SalesRow) => row.sales_agent && row.amount_paid > 0 && row.data_month);
+            setSalesData(rows);
+            setLoading(false);
+          },
+          error: () => {
+            setSalesData([]);
+            setLoading(false);
+          }
+        });
+      })
+      .catch(() => {
+        setSalesData([]);
+        setLoading(false);
+      });
+  }, []);
+
+  // Process historical data from CSV
+  useEffect(() => {
+    if (salesData.length === 0) return;
+
+    const monthlyStats: Record<string, MonthlyData> = {};
+
+    salesData.forEach(row => {
+      const key = `${row.data_month}-${row.data_year}`;
+      
+      if (!monthlyStats[key]) {
+        monthlyStats[key] = {
+          month: row.data_month,
+          year: row.data_year,
+          total_customers: 0,
+          total_revenue: 0,
+          avg_amount_paid: 0,
+          avg_duration_months: 0,
+          long_term_customers: 0,
+          ibo_players: 0,
+          bob_players: 0,
+          smarters: 0,
+          ibo_pro: 0,
+          service_premium: 0,
+          service_standard: 0,
+          service_basic: 0,
+          avg_customer_age_days: 0,
+          total_commission: 0,
+          unique_agents: 0,
+          unique_closers: 0,
+          countries_count: 0
+        };
+      }
+
+      const stats = monthlyStats[key];
+      stats.total_customers += 1;
+      stats.total_revenue += row.amount_paid;
+      stats.total_commission += row.paid_per_month;
+      stats.avg_duration_months += row.duration_months_cleaned;
+      stats.avg_customer_age_days += row.customer_age_days;
+      
+      if (row.is_long_term) stats.long_term_customers += 1;
+      if (row.is_ibo_player) stats.ibo_players += 1;
+      if (row.is_bob_player) stats.bob_players += 1;
+      if (row.is_smarters) stats.smarters += 1;
+      if (row.is_ibo_pro) stats.ibo_pro += 1;
+      
+      // Service tier classification
+      if (row.service_tier.toLowerCase().includes('premium')) stats.service_premium += 1;
+      else if (row.service_tier.toLowerCase().includes('standard')) stats.service_standard += 1;
+      else stats.service_basic += 1;
+    });
+
+    // Calculate averages and unique counts
+    const processedData: MonthlyData[] = Object.values(monthlyStats).map(stats => {
+      const monthData = salesData.filter(row => `${row.data_month}-${row.data_year}` === `${stats.month}-${stats.year}`);
+      
+      return {
+        ...stats,
+        avg_amount_paid: Math.round(stats.total_revenue / stats.total_customers),
+        avg_duration_months: Math.round((stats.avg_duration_months / stats.total_customers) * 10) / 10,
+        avg_customer_age_days: Math.round(stats.avg_customer_age_days / stats.total_customers),
+        unique_agents: new Set(monthData.map(row => row.sales_agent)).size,
+        unique_closers: new Set(monthData.map(row => row.closing_agent)).size,
+        countries_count: new Set(monthData.map(row => row.country)).size
+      };
+    });
+
+    // Sort by month order
+    const monthOrder = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    processedData.sort((a, b) => {
+      const yearDiff = parseInt(a.year) - parseInt(b.year);
+      if (yearDiff !== 0) return yearDiff;
+      return monthOrder.indexOf(a.month) - monthOrder.indexOf(b.month);
+    });
+
+    setHistoricalData(processedData);
+  }, [salesData]);
+
+  // Generate predictions when historical data or settings change
+  useEffect(() => {
+    if (historicalData.length === 0) return;
+    
     const newPredictions = generatePredictions(historicalData, predictionMonths);
     setPredictions(newPredictions);
-    setCombinedData([...historicalData, ...newPredictions]);
-  }, [predictionMonths]);
+    
+    const historicalWithType: PredictionData[] = historicalData.map(data => ({
+      ...data,
+      confidence: 1.0,
+      type: 'historical' as const
+    }));
+    
+    setCombinedData([...historicalWithType, ...newPredictions]);
+  }, [historicalData, predictionMonths]);
 
-  // Calculate prediction insights
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-xl text-slate-600 dark:text-slate-400">Loading customer data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Calculate KPIs from actual data
+  const totalCustomers = salesData.length;
+  const totalRevenue = salesData.reduce((sum, row) => sum + row.amount_paid, 0);
+  const totalCommission = salesData.reduce((sum, row) => sum + row.paid_per_month, 0);
+  const avgDealSize = totalCustomers > 0 ? totalRevenue / totalCustomers : 0;
+  const closedDeals = salesData.filter(row => row.is_long_term).length; // All deals are closed as per your note
+  
+  // Prediction insights
   const lastActual = historicalData[historicalData.length - 1];
   const lastPrediction = predictions[predictions.length - 1];
   const totalPredictedRevenue = predictions.reduce((sum, p) => sum + p.total_revenue, 0);
-  const totalPredictedCustomers = predictions.reduce((sum, p) => sum + p.new_customers, 0);
-  const avgConfidence = predictions.reduce((sum, p) => sum + p.confidence, 0) / predictions.length;
-  const avgPredictedChurn = predictions.reduce((sum, p) => sum + p.churn_rate, 0) / predictions.length;
+  const totalPredictedCustomers = predictions.reduce((sum, p) => sum + p.total_customers, 0);
+  const avgConfidence = predictions.length > 0 ? predictions.reduce((sum, p) => sum + p.confidence, 0) / predictions.length : 0;
+
+  // Top performers from actual data
+  const agentStats = salesData.reduce((acc: Record<string, {revenue: number, deals: number}>, row) => {
+    if (!acc[row.sales_agent]) {
+      acc[row.sales_agent] = { revenue: 0, deals: 0 };
+    }
+    acc[row.sales_agent].revenue += row.amount_paid;
+    acc[row.sales_agent].deals += 1;
+    return acc;
+  }, {});
+
+  const topAgents = Object.entries(agentStats)
+    .map(([name, stats]) => ({ name, ...stats, avgDeal: stats.revenue / stats.deals }))
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 5);
+
+  const closerStats = salesData.reduce((acc: Record<string, {revenue: number, deals: number}>, row) => {
+    if (!acc[row.closing_agent]) {
+      acc[row.closing_agent] = { revenue: 0, deals: 0 };
+    }
+    acc[row.closing_agent].revenue += row.amount_paid;
+    acc[row.closing_agent].deals += 1;
+    return acc;
+  }, {});
+
+  const topClosers = Object.entries(closerStats)
+    .map(([name, stats]) => ({ name, ...stats, avgDeal: stats.revenue / stats.deals }))
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 5);
 
   const insights = [
     {
       title: 'Revenue Growth',
-      value: lastPrediction ? `${(((lastPrediction.total_revenue - lastActual.total_revenue) / lastActual.total_revenue) * 100).toFixed(1)}%` : '0%',
+      value: lastPrediction && lastActual ? `${(((lastPrediction.total_revenue - lastActual.total_revenue) / lastActual.total_revenue) * 100).toFixed(1)}%` : '0%',
       icon: TrendingUp,
       color: 'green',
       description: 'Expected revenue growth over prediction period'
     },
     {
       title: 'New Customers',
-      value: totalPredictedCustomers,
+      value: totalPredictedCustomers.toLocaleString(),
       icon: Users,
       color: 'blue',
       description: 'Total predicted new customers'
     },
     {
-      title: 'Avg Churn Rate',
-      value: `${(avgPredictedChurn * 100).toFixed(1)}%`,
-      icon: AlertCircle,
-      color: avgPredictedChurn > 0.15 ? 'red' : 'yellow',
-      description: 'Average predicted churn rate'
+      title: 'Predicted Revenue',
+      value: `$${(totalPredictedRevenue / 1000).toFixed(0)}K`,
+      icon: DollarSign,
+      color: 'purple',
+      description: 'Total predicted revenue'
     },
     {
       title: 'Confidence Level',
       value: `${(avgConfidence * 100).toFixed(0)}%`,
       icon: CheckCircle,
-      color: 'purple',
+      color: 'orange',
       description: 'Average prediction confidence'
     }
   ];
 
-  // Product distribution data for pie chart
-  const productDistribution = predictions.length > 0 ? [
-    { name: 'IBO Players', value: predictions[0].ibo_players, color: '#8B5CF6' },
-    { name: 'BOB Players', value: predictions[0].bob_players, color: '#EC4899' },
-    { name: 'Smarters', value: predictions[0].smarters, color: '#10B981' },
-    { name: 'IBO Pro', value: predictions[0].ibo_pro, color: '#F59E0B' }
-  ] : [];
+  // Product distribution for pie chart
+  const productDistribution = [
+    { name: 'IBO Players', value: salesData.filter(row => row.is_ibo_player).length, color: '#8B5CF6' },
+    { name: 'BOB Players', value: salesData.filter(row => row.is_bob_player).length, color: '#EC4899' },
+    { name: 'Smarters', value: salesData.filter(row => row.is_smarters).length, color: '#10B981' },
+    { name: 'IBO Pro', value: salesData.filter(row => row.is_ibo_pro).length, color: '#F59E0B' }
+  ].filter(item => item.value > 0);
 
   return (
     <div className="p-6 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 min-h-screen">
@@ -214,9 +427,37 @@ const CustomerPrediction: React.FC = () => {
           Customer Analytics & Forecasting
         </h1>
         <p className="text-xl text-slate-600 dark:text-slate-400">
-          Based on April-June 2025 data - Forecasting July 2025 onwards
+          Advanced forecasting from July 2025 onwards based on real sales data
         </p>
       </motion.div>
+
+      {/* Current Performance KPIs */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        {[
+          { title: 'Total Customers', value: totalCustomers.toLocaleString(), icon: Users, color: 'blue', description: 'All customers in database' },
+          { title: 'Total Revenue', value: `$${(totalRevenue / 1000).toFixed(0)}K`, icon: DollarSign, color: 'green', description: 'Total revenue generated' },
+          { title: 'Closed Deals', value: totalCustomers.toLocaleString(), icon: Target, color: 'purple', description: 'All deals are closed' },
+          { title: 'Avg Deal Size', value: `$${Math.round(avgDealSize).toLocaleString()}`, icon: Award, color: 'orange', description: 'Average revenue per customer' },
+          { title: 'Total Commission', value: `$${(totalCommission / 1000).toFixed(0)}K`, icon: Crown, color: 'pink', description: 'Total commission earned' }
+        ].map((metric, index) => (
+          <motion.div
+            key={metric.title}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 + index * 0.1 }}
+            className="bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 rounded-3xl p-6 shadow-xl border border-slate-200 dark:border-slate-700 hover:shadow-2xl transition-all duration-300 hover:scale-105"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className={`p-4 rounded-2xl bg-${metric.color}-100 dark:bg-${metric.color}-900/30`}>
+                <metric.icon className={`w-8 h-8 text-${metric.color}-600 dark:text-${metric.color}-400`} />
+              </div>
+            </div>
+            <p className="text-slate-600 dark:text-slate-400 text-sm font-medium mb-2">{metric.title}</p>
+            <p className="text-3xl font-bold text-slate-900 dark:text-white mb-1">{metric.value}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{metric.description}</p>
+          </motion.div>
+        ))}
+      </div>
 
       {/* Controls */}
       <motion.div
@@ -227,7 +468,7 @@ const CustomerPrediction: React.FC = () => {
       >
         <div className="flex items-center space-x-3 mb-6">
           <Brain className="w-6 h-6 text-purple-600" />
-          <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Prediction Settings</h3>
+          <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Forecasting Settings</h3>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -257,9 +498,9 @@ const CustomerPrediction: React.FC = () => {
               className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             >
               <option value="total_revenue">Total Revenue</option>
-              <option value="new_customers">New Customers</option>
+              <option value="total_customers">New Customers</option>
               <option value="avg_amount_paid">Average Amount Paid</option>
-              <option value="churn_rate">Churn Rate</option>
+              <option value="total_commission">Commission</option>
             </select>
           </div>
           
@@ -275,7 +516,7 @@ const CustomerPrediction: React.FC = () => {
         </div>
       </motion.div>
 
-      {/* Insights Cards */}
+      {/* Prediction Insights Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {insights.map((insight, index) => (
           <motion.div
@@ -306,13 +547,20 @@ const CustomerPrediction: React.FC = () => {
       >
         <div className="flex items-center space-x-3 mb-6">
           <BarChart3 className="w-6 h-6 text-purple-600" />
-          <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Revenue & Customer Growth Timeline</h3>
+          <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Revenue & Customer Growth Forecast</h3>
         </div>
         
-        <ResponsiveContainer width="100%" height={400}>
+        <ResponsiveContainer width="100%" height={450}>
           <ComposedChart data={combinedData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-            <XAxis dataKey="month" stroke="#6B7280" fontSize={12} />
+            <XAxis 
+              dataKey={(data) => `${data.month} ${data.year}`} 
+              stroke="#6B7280" 
+              fontSize={11}
+              angle={-45}
+              textAnchor="end"
+              height={80}
+            />
             <YAxis yAxisId="revenue" orientation="left" stroke="#6B7280" />
             <YAxis yAxisId="customers" orientation="right" stroke="#6B7280" />
             <Tooltip 
@@ -336,20 +584,18 @@ const CustomerPrediction: React.FC = () => {
             />
             <Bar
               yAxisId="customers"
-              dataKey="new_customers"
+              dataKey="total_customers"
               fill="#EC4899"
-              name="New Customers"
+              name="Customers"
               opacity={0.7}
             />
             <Line 
               yAxisId="revenue"
               type="monotone" 
-              dataKey="total_revenue" 
+              dataKey="total_commission" 
               stroke="#10B981" 
-              strokeWidth={4} 
-              strokeDasharray="5 5"
-              name="Revenue Trend"
-              connectNulls={false}
+              strokeWidth={3}
+              name="Commission ($)"
             />
             <defs>
               <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
@@ -363,7 +609,7 @@ const CustomerPrediction: React.FC = () => {
 
       {/* Detailed Analysis Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-        {/* Churn Rate Analysis */}
+        {/* Product Distribution */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -371,42 +617,7 @@ const CustomerPrediction: React.FC = () => {
           className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-xl border border-slate-200 dark:border-slate-700"
         >
           <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center">
-            <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
-            Churn Rate Forecast
-          </h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={combinedData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-              <XAxis dataKey="month" stroke="#6B7280" fontSize={10} />
-              <YAxis stroke="#6B7280" />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#1F2937', 
-                  border: 'none', 
-                  borderRadius: '12px',
-                  color: '#F9FAFB'
-                }} 
-              />
-              <Line 
-                type="monotone" 
-                dataKey="churn_rate" 
-                stroke="#EF4444" 
-                strokeWidth={3}
-                name="Churn Rate"
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </motion.div>
-
-        {/* Product Distribution */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
-          className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-xl border border-slate-200 dark:border-slate-700"
-        >
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center">
-            <Target className="w-5 h-5 text-blue-500 mr-2" />
+            <Package className="w-5 h-5 text-blue-500 mr-2" />
             Product Distribution
           </h3>
           <ResponsiveContainer width="100%" height={250}>
@@ -437,21 +648,25 @@ const CustomerPrediction: React.FC = () => {
           </ResponsiveContainer>
         </motion.div>
 
-        {/* Average Deal Size Trend */}
+        {/* Monthly Trend */}
         <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.9 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8 }}
           className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-xl border border-slate-200 dark:border-slate-700"
         >
           <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center">
-            <DollarSign className="w-5 h-5 text-green-500 mr-2" />
-            Average Amount Paid
+            <Activity className="w-5 h-5 text-green-500 mr-2" />
+            Average Deal Size Trend
           </h3>
           <ResponsiveContainer width="100%" height={250}>
             <AreaChart data={combinedData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-              <XAxis dataKey="month" stroke="#6B7280" fontSize={10} />
+              <XAxis 
+                dataKey={(data) => data.month.substring(0, 3)} 
+                stroke="#6B7280" 
+                fontSize={10} 
+              />
               <YAxis stroke="#6B7280" />
               <Tooltip 
                 contentStyle={{ 
@@ -468,6 +683,46 @@ const CustomerPrediction: React.FC = () => {
                 fill="#10B981" 
                 fillOpacity={0.3}
                 name="Avg Amount ($)"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </motion.div>
+
+        {/* Confidence Analysis */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.9 }}
+          className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-xl border border-slate-200 dark:border-slate-700"
+        >
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center">
+            <Shield className="w-5 h-5 text-purple-500 mr-2" />
+            Prediction Confidence
+          </h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <AreaChart data={predictions}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+              <XAxis 
+                dataKey={(data) => data.month.substring(0, 3)} 
+                stroke="#6B7280" 
+                fontSize={10}
+              />
+              <YAxis stroke="#6B7280" />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: '#1F2937', 
+                  border: 'none', 
+                  borderRadius: '12px',
+                  color: '#F9FAFB'
+                }} 
+              />
+              <Area 
+                type="monotone" 
+                dataKey="confidence" 
+                stroke="#8B5CF6" 
+                fill="#8B5CF6" 
+                fillOpacity={0.3}
+                name="Confidence Level"
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -489,56 +744,43 @@ const CustomerPrediction: React.FC = () => {
           </div>
           
           <div className="space-y-4">
-            {teamPerformance.sales_agents
-              .sort((a, b) => b.revenue - a.revenue)
-              .slice(0, 3)
-              .map((agent, index) => (
-                <motion.div
-                  key={agent.name}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 1.2 + index * 0.1 }}
-                  className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-2xl p-6 border border-blue-200 dark:border-blue-700"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
-                        {index + 1}
-                      </div>
-                      <div>
-                        <h4 className="text-lg font-bold text-slate-900 dark:text-white">{agent.name}</h4>
-                        <p className="text-sm text-slate-600 dark:text-slate-400">{agent.role}</p>
-                      </div>
-                    </div>
-                    <Star className="w-6 h-6 text-yellow-500" fill="currentColor" />
-                  </div>
-                  
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                      <p className="text-2xl font-bold text-blue-600">{agent.deals}</p>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">Deals</p>
+            {topAgents.slice(0, 3).map((agent, index) => (
+              <motion.div
+                key={agent.name}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.2 + index * 0.1 }}
+                className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-2xl p-6 border border-blue-200 dark:border-blue-700"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
+                      {index + 1}
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-green-600">${(agent.revenue / 1000).toFixed(1)}K</p>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">Revenue</p>
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-purple-600">{(agent.conversion_rate * 100).toFixed(0)}%</p>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">Conversion</p>
+                      <h4 className="text-lg font-bold text-slate-900 dark:text-white">{agent.name}</h4>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">Sales Agent</p>
                     </div>
                   </div>
-                  
-                  <div className="mt-4 pt-4 border-t border-blue-200 dark:border-blue-700">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Next Month Prediction:</span>
-                      <span className="text-lg font-bold text-blue-600 flex items-center">
-                        {agent.predicted_next_month} deals
-                        <TrendingUp className="w-4 h-4 ml-1" />
-                      </span>
-                    </div>
+                  <Star className="w-6 h-6 text-yellow-500" fill="currentColor" />
+                </div>
+                
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-2xl font-bold text-blue-600">{agent.deals}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Deals</p>
                   </div>
-                </motion.div>
-              ))}
+                  <div>
+                    <p className="text-2xl font-bold text-green-600">${(agent.revenue / 1000).toFixed(1)}K</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Revenue</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-purple-600">${Math.round(agent.avgDeal)}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Avg Deal</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
           </div>
         </motion.div>
 
@@ -555,56 +797,43 @@ const CustomerPrediction: React.FC = () => {
           </div>
           
           <div className="space-y-4">
-            {teamPerformance.closers
-              .sort((a, b) => b.revenue - a.revenue)
-              .slice(0, 3)
-              .map((closer, index) => (
-                <motion.div
-                  key={closer.name}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 1.2 + index * 0.1 }}
-                  className="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-2xl p-6 border border-green-200 dark:border-green-700"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white font-bold">
-                        {index + 1}
-                      </div>
-                      <div>
-                        <h4 className="text-lg font-bold text-slate-900 dark:text-white">{closer.name}</h4>
-                        <p className="text-sm text-slate-600 dark:text-slate-400">{closer.role}</p>
-                      </div>
-                    </div>
-                    <Star className="w-6 h-6 text-yellow-500" fill="currentColor" />
-                  </div>
-                  
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                      <p className="text-2xl font-bold text-green-600">{closer.deals}</p>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">Deals</p>
+            {topClosers.slice(0, 3).map((closer, index) => (
+              <motion.div
+                key={closer.name}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.2 + index * 0.1 }}
+                className="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-2xl p-6 border border-green-200 dark:border-green-700"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white font-bold">
+                      {index + 1}
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-blue-600">${(closer.revenue / 1000).toFixed(1)}K</p>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">Revenue</p>
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold text-purple-600">{(closer.conversion_rate * 100).toFixed(0)}%</p>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">Conversion</p>
+                      <h4 className="text-lg font-bold text-slate-900 dark:text-white">{closer.name}</h4>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">Closer</p>
                     </div>
                   </div>
-                  
-                  <div className="mt-4 pt-4 border-t border-green-200 dark:border-green-700">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Next Month Prediction:</span>
-                      <span className="text-lg font-bold text-green-600 flex items-center">
-                        {closer.predicted_next_month} deals
-                        <TrendingUp className="w-4 h-4 ml-1" />
-                      </span>
-                    </div>
+                  <Star className="w-6 h-6 text-yellow-500" fill="currentColor" />
+                </div>
+                
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-2xl font-bold text-green-600">{closer.deals}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Deals</p>
                   </div>
-                </motion.div>
-              ))}
+                  <div>
+                    <p className="text-2xl font-bold text-blue-600">${(closer.revenue / 1000).toFixed(1)}K</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Revenue</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-purple-600">${Math.round(closer.avgDeal)}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Avg Deal</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
           </div>
         </motion.div>
       </div>
@@ -618,11 +847,11 @@ const CustomerPrediction: React.FC = () => {
       >
         <div className="flex items-center space-x-3 mb-6">
           <BarChart3 className="w-6 h-6 text-orange-600" />
-          <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Agent Performance Analysis</h3>
+          <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Top 10 Agent Performance Analysis</h3>
         </div>
         
         <ResponsiveContainer width="100%" height={400}>
-          <ComposedChart data={agentPerformanceData}>
+          <ComposedChart data={topAgents.slice(0, 10)}>
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
             <XAxis 
               dataKey="name" 
@@ -659,22 +888,15 @@ const CustomerPrediction: React.FC = () => {
               strokeWidth={3}
               name="Deals Count"
             />
-            <Line 
-              yAxisId="deals"
-              type="monotone" 
-              dataKey="predicted_next_month" 
-              stroke="#10B981" 
-              strokeWidth={3}
-              strokeDasharray="5 5"
-              name="Predicted Next Month"
-            />
           </ComposedChart>
         </ResponsiveContainer>
       </motion.div>
+
+      {/* Summary Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1.0 }}
+        transition={{ delay: 1.4 }}
         className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-3xl p-8 text-white shadow-2xl"
       >
         <h2 className="text-3xl font-bold mb-6 text-center">🔮 Customer Analytics Summary</h2>
@@ -683,35 +905,35 @@ const CustomerPrediction: React.FC = () => {
             <Users className="w-12 h-12 mx-auto mb-4 text-yellow-300" />
             <h3 className="text-xl font-bold mb-2">Customer Insights</h3>
             <p className="text-lg opacity-90">
-              Expected to acquire {totalPredictedCustomers} new customers from Jul 2025 onwards over {predictionMonths} months with 
-              {predictions.length > 0 && predictions[0].ibo_players > predictions[0].bob_players ? ' IBO Players' : ' BOB Players'} leading growth.
+              Based on {totalCustomers} customers, expecting {totalPredictedCustomers} new customers 
+              over the next {predictionMonths} months starting July 2025.
             </p>
           </div>
           <div className="text-center">
             <Shield className="w-12 h-12 mx-auto mb-4 text-yellow-300" />
-            <h3 className="text-xl font-bold mb-2">Retention Strategy</h3>
+            <h3 className="text-xl font-bold mb-2">Revenue Forecast</h3>
             <p className="text-lg opacity-90">
-              Monitor churn rate closely - current prediction shows {(avgPredictedChurn * 100).toFixed(1)}% average churn. 
-              Focus on long-term customer conversion.
+              Projected revenue of ${(totalPredictedRevenue / 1000).toFixed(0)}K with 
+              {avgConfidence > 0.8 ? ' high' : avgConfidence > 0.6 ? ' medium' : ' moderate'} confidence levels.
             </p>
           </div>
           <div className="text-center">
             <Clock className="w-12 h-12 mx-auto mb-4 text-yellow-300" />
-            <h3 className="text-xl font-bold mb-2">Revenue Outlook</h3>
+            <h3 className="text-xl font-bold mb-2">Performance Outlook</h3>
             <p className="text-lg opacity-90">
-              Total predicted revenue of ${(totalPredictedRevenue / 1000).toFixed(0)}K starting from July 2025 with seasonal variations. 
-              Q4 2025 and Q1 2026 show strongest performance.
+              Top agents and closers show consistent performance. 
+              {productDistribution[0]?.name} leads product adoption.
             </p>
           </div>
         </div>
         
         <div className="mt-8 pt-8 border-t border-white/20">
           <div className="text-center">
-            <h4 className="text-lg font-semibold mb-2">Key Performance Indicators</h4>
+            <h4 className="text-lg font-semibold mb-4">Key Performance Indicators</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <p className="text-2xl font-bold">${(totalPredictedRevenue / 1000).toFixed(0)}K</p>
-                <p className="text-sm opacity-75">Total Revenue</p>
+                <p className="text-sm opacity-75">Predicted Revenue</p>
               </div>
               <div>
                 <p className="text-2xl font-bold">{totalPredictedCustomers}</p>
@@ -722,8 +944,8 @@ const CustomerPrediction: React.FC = () => {
                 <p className="text-sm opacity-75">Confidence</p>
               </div>
               <div>
-                <p className="text-2xl font-bold">{lastPrediction ? lastPrediction.avg_duration_months : '6.8'}mo</p>
-                <p className="text-sm opacity-75">Avg Duration</p>
+                <p className="text-2xl font-bold">{new Set(salesData.map(row => row.country)).size}</p>
+                <p className="text-sm opacity-75">Countries</p>
               </div>
             </div>
           </div>
