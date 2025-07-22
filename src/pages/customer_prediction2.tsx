@@ -201,6 +201,67 @@ const CustomerPrediction: React.FC = () => {
   const [combinedData, setCombinedData] = useState<PredictionData[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Product distribution for pie chart - moved before conditional return
+  const productDistribution = React.useMemo(() => {
+    const distribution = [
+      { 
+        name: 'IBO Players', 
+        value: salesData.filter(row => row.is_ibo_player).length, 
+        revenue: salesData.filter(row => row.is_ibo_player).reduce((sum, row) => sum + row.amount_paid, 0),
+        color: '#8B5CF6' 
+      },
+      { 
+        name: 'BOB Players', 
+        value: salesData.filter(row => row.is_bob_player).length, 
+        revenue: salesData.filter(row => row.is_bob_player).reduce((sum, row) => sum + row.amount_paid, 0),
+        color: '#EC4899' 
+      },
+      { 
+        name: 'Smarters', 
+        value: salesData.filter(row => row.is_smarters).length, 
+        revenue: salesData.filter(row => row.is_smarters).reduce((sum, row) => sum + row.amount_paid, 0),
+        color: '#10B981' 
+      },
+      { 
+        name: 'IBO Pro', 
+        value: salesData.filter(row => row.is_ibo_pro).length, 
+        revenue: salesData.filter(row => row.is_ibo_pro).reduce((sum, row) => sum + row.amount_paid, 0),
+        color: '#F59E0B' 
+      }
+    ].filter(item => item.value > 0);
+    
+    const totalCustomers = salesData.length;
+    return distribution.map(item => ({
+      ...item,
+      percentage: totalCustomers > 0 ? (item.value / totalCustomers) * 100 : 0,
+      avgRevenue: item.value > 0 ? item.revenue / item.value : 0
+    }));
+  }, [salesData]);
+
+  // Service tier distribution - moved before conditional return
+  const serviceTierDistribution = React.useMemo(() => {
+    const tiers: Record<string, {count: number, revenue: number}> = {};
+    
+    salesData.forEach(row => {
+      const tier = row.service_tier || 'Unknown';
+      if (!tiers[tier]) {
+        tiers[tier] = { count: 0, revenue: 0 };
+      }
+      tiers[tier].count += 1;
+      tiers[tier].revenue += row.amount_paid;
+    });
+    
+    const totalCustomers = salesData.length;
+    return Object.entries(tiers).map(([name, data], index) => ({
+      name,
+      value: data.count,
+      revenue: data.revenue,
+      percentage: totalCustomers > 0 ? (data.count / totalCustomers) * 100 : 0,
+      avgRevenue: data.count > 0 ? data.revenue / data.count : 0,
+      color: ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#6366F1'][index % 6]
+    })).sort((a, b) => b.value - a.value);
+  }, [salesData]);
+
   // Load CSV data
   useEffect(() => {
     fetch(CSV_PATH)
@@ -406,65 +467,6 @@ const CustomerPrediction: React.FC = () => {
       description: 'Average prediction confidence'
     }
   ];
-
-  // Product distribution for pie chart
-  const productDistribution = React.useMemo(() => {
-    const distribution = [
-      { 
-        name: 'IBO Players', 
-        value: salesData.filter(row => row.is_ibo_player).length, 
-        revenue: salesData.filter(row => row.is_ibo_player).reduce((sum, row) => sum + row.amount_paid, 0),
-        color: '#8B5CF6' 
-      },
-      { 
-        name: 'BOB Players', 
-        value: salesData.filter(row => row.is_bob_player).length, 
-        revenue: salesData.filter(row => row.is_bob_player).reduce((sum, row) => sum + row.amount_paid, 0),
-        color: '#EC4899' 
-      },
-      { 
-        name: 'Smarters', 
-        value: salesData.filter(row => row.is_smarters).length, 
-        revenue: salesData.filter(row => row.is_smarters).reduce((sum, row) => sum + row.amount_paid, 0),
-        color: '#10B981' 
-      },
-      { 
-        name: 'IBO Pro', 
-        value: salesData.filter(row => row.is_ibo_pro).length, 
-        revenue: salesData.filter(row => row.is_ibo_pro).reduce((sum, row) => sum + row.amount_paid, 0),
-        color: '#F59E0B' 
-      }
-    ].filter(item => item.value > 0);
-    
-    return distribution.map(item => ({
-      ...item,
-      percentage: totalCustomers > 0 ? (item.value / totalCustomers) * 100 : 0,
-      avgRevenue: item.value > 0 ? item.revenue / item.value : 0
-    }));
-  }, [salesData, totalCustomers]);
-
-  // Service tier distribution
-  const serviceTierDistribution = React.useMemo(() => {
-    const tiers: Record<string, {count: number, revenue: number}> = {};
-    
-    salesData.forEach(row => {
-      const tier = row.service_tier || 'Unknown';
-      if (!tiers[tier]) {
-        tiers[tier] = { count: 0, revenue: 0 };
-      }
-      tiers[tier].count += 1;
-      tiers[tier].revenue += row.amount_paid;
-    });
-    
-    return Object.entries(tiers).map(([name, data], index) => ({
-      name,
-      value: data.count,
-      revenue: data.revenue,
-      percentage: totalCustomers > 0 ? (data.count / totalCustomers) * 100 : 0,
-      avgRevenue: data.count > 0 ? data.revenue / data.count : 0,
-      color: ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#6366F1'][index % 6]
-    })).sort((a, b) => b.value - a.value);
-  }, [salesData, totalCustomers]);
 
   return (
     <div className="p-6 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 min-h-screen">
