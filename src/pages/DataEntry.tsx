@@ -38,7 +38,7 @@ export const DataEntry: React.FC = () => {
       date: formData.date,
       region: formData.region,
       customerType: formData.customerType,
-      commission: formData.commission
+      commission: parseFloat(formData.commission)
     });
     
     // Also add to local state for immediate UI update

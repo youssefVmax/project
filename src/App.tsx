@@ -2,10 +2,10 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useTheme } from './hooks/useTheme';
 import { Navigation } from './components/Navigation';
-import { Dashboard } from './pages/Dashboard';
+import { Dashboard } from './pages/Dashboard_Updated-work';
 import { DataEntry } from './pages/DataEntry';
 import { SalesTable } from './pages/SalesTable';
-import { Prediction } from './pages/Prediction';
+import CustomerPrediction from './pages/customer_prediction2';
 import { CompanyOverview } from './pages/CompanyOverview';
 import { Footer } from './components/Footer';
 
@@ -21,7 +21,7 @@ function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/data-entry" element={<DataEntry />} />
             <Route path="/sales-table" element={<SalesTable />} />
-            <Route path="/prediction" element={<Prediction />} />
+            <Route path="/prediction" element={<CustomerPrediction />} />
             <Route path="/company-overview" element={<CompanyOverview />} />
           </Routes>
         </main>

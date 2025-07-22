@@ -1,6 +1,15 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Building2, Tv, Satellite, Users, Globe, Award, TrendingUp, Shield } from 'lucide-react';
+
+// Ensure JSX types are available
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      [elemName: string]: any;
+    }
+  }
+}
 import { dataStore } from '../utils/dataStore';
 import { useEffect } from 'react';
 
