@@ -408,12 +408,63 @@ const CustomerPrediction: React.FC = () => {
   ];
 
   // Product distribution for pie chart
-  const productDistribution = [
-    { name: 'IBO Players', value: salesData.filter(row => row.is_ibo_player).length, color: '#8B5CF6' },
-    { name: 'BOB Players', value: salesData.filter(row => row.is_bob_player).length, color: '#EC4899' },
-    { name: 'Smarters', value: salesData.filter(row => row.is_smarters).length, color: '#10B981' },
-    { name: 'IBO Pro', value: salesData.filter(row => row.is_ibo_pro).length, color: '#F59E0B' }
-  ].filter(item => item.value > 0);
+  const productDistribution = React.useMemo(() => {
+    const distribution = [
+      { 
+        name: 'IBO Players', 
+        value: salesData.filter(row => row.is_ibo_player).length, 
+        revenue: salesData.filter(row => row.is_ibo_player).reduce((sum, row) => sum + row.amount_paid, 0),
+        color: '#8B5CF6' 
+      },
+      { 
+        name: 'BOB Players', 
+        value: salesData.filter(row => row.is_bob_player).length, 
+        revenue: salesData.filter(row => row.is_bob_player).reduce((sum, row) => sum + row.amount_paid, 0),
+        color: '#EC4899' 
+      },
+      { 
+        name: 'Smarters', 
+        value: salesData.filter(row => row.is_smarters).length, 
+        revenue: salesData.filter(row => row.is_smarters).reduce((sum, row) => sum + row.amount_paid, 0),
+        color: '#10B981' 
+      },
+      { 
+        name: 'IBO Pro', 
+        value: salesData.filter(row => row.is_ibo_pro).length, 
+        revenue: salesData.filter(row => row.is_ibo_pro).reduce((sum, row) => sum + row.amount_paid, 0),
+        color: '#F59E0B' 
+      }
+    ].filter(item => item.value > 0);
+    
+    return distribution.map(item => ({
+      ...item,
+      percentage: totalCustomers > 0 ? (item.value / totalCustomers) * 100 : 0,
+      avgRevenue: item.value > 0 ? item.revenue / item.value : 0
+    }));
+  }, [salesData, totalCustomers]);
+
+  // Service tier distribution
+  const serviceTierDistribution = React.useMemo(() => {
+    const tiers: Record<string, {count: number, revenue: number}> = {};
+    
+    salesData.forEach(row => {
+      const tier = row.service_tier || 'Unknown';
+      if (!tiers[tier]) {
+        tiers[tier] = { count: 0, revenue: 0 };
+      }
+      tiers[tier].count += 1;
+      tiers[tier].revenue += row.amount_paid;
+    });
+    
+    return Object.entries(tiers).map(([name, data], index) => ({
+      name,
+      value: data.count,
+      revenue: data.revenue,
+      percentage: totalCustomers > 0 ? (data.count / totalCustomers) * 100 : 0,
+      avgRevenue: data.count > 0 ? data.revenue / data.count : 0,
+      color: ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#6366F1'][index % 6]
+    })).sort((a, b) => b.value - a.value);
+  }, [salesData, totalCustomers]);
 
   return (
     <div className="p-6 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 min-h-screen">
@@ -608,7 +659,7 @@ const CustomerPrediction: React.FC = () => {
       </motion.div>
 
       {/* Detailed Analysis Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         {/* Product Distribution */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -616,50 +667,162 @@ const CustomerPrediction: React.FC = () => {
           transition={{ delay: 0.7 }}
           className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-xl border border-slate-200 dark:border-slate-700"
         >
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center">
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center">
             <Package className="w-5 h-5 text-blue-500 mr-2" />
             Product Distribution
           </h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie
-                data={productDistribution}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={100}
-                paddingAngle={5}
-                dataKey="value"
-              >
-                {productDistribution.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#1F2937', 
-                  border: 'none', 
-                  borderRadius: '12px',
-                  color: '#F9FAFB'
-                }} 
-              />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={productDistribution}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={120}
+                  paddingAngle={5}
+                  dataKey="value"
+                  label={({ name, percentage }) => `${name}: ${percentage.toFixed(1)}%`}
+                  labelLine={false}
+                >
+                  {productDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#1F2937', 
+                    border: 'none', 
+                    borderRadius: '12px',
+                    color: '#F9FAFB'
+                  }} 
+                  formatter={(value, name, props) => [
+                    `${value} customers (${props.payload.percentage.toFixed(1)}%)`,
+                    name
+                  ]}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            
+            {/* Product Details */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-slate-900 dark:text-white">Product Details</h4>
+              {productDistribution.map((product, index) => (
+                <div key={product.name} className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-3">
+                      <div 
+                        className="w-4 h-4 rounded-full" 
+                        style={{ backgroundColor: product.color }}
+                      />
+                      <span className="font-medium text-slate-900 dark:text-white">{product.name}</span>
+                    </div>
+                    <span className="text-sm font-bold text-slate-900 dark:text-white">
+                      {product.value} customers
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 dark:text-slate-400">
+                    <div>Revenue: ${(product.revenue / 1000).toFixed(1)}K</div>
+                    <div>Avg: ${Math.round(product.avgRevenue).toLocaleString()}</div>
+                    <div>Share: {product.percentage.toFixed(1)}%</div>
+                    <div>Market Position: #{index + 1}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </motion.div>
 
-        {/* Monthly Trend */}
+        {/* Service Tier Distribution */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.8 }}
           className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-xl border border-slate-200 dark:border-slate-700"
         >
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center">
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center">
+            <Star className="w-5 h-5 text-purple-500 mr-2" />
+            Service Tier Analysis
+          </h3>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={serviceTierDistribution}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={120}
+                  paddingAngle={5}
+                  dataKey="value"
+                  label={({ name, percentage }) => `${percentage.toFixed(1)}%`}
+                  labelLine={false}
+                >
+                  {serviceTierDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: '#1F2937', 
+                    border: 'none', 
+                    borderRadius: '12px',
+                    color: '#F9FAFB'
+                  }} 
+                  formatter={(value, name, props) => [
+                    `${value} customers (${props.payload.percentage.toFixed(1)}%)`,
+                    name
+                  ]}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            
+            {/* Service Tier Details */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-slate-900 dark:text-white">Service Tier Breakdown</h4>
+              {serviceTierDistribution.map((tier, index) => (
+                <div key={tier.name} className="bg-slate-50 dark:bg-slate-700 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-3">
+                      <div 
+                        className="w-4 h-4 rounded-full" 
+                        style={{ backgroundColor: tier.color }}
+                      />
+                      <span className="font-medium text-slate-900 dark:text-white">{tier.name}</span>
+                    </div>
+                    <span className="text-sm font-bold text-slate-900 dark:text-white">
+                      {tier.value} customers
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 dark:text-slate-400">
+                    <div>Revenue: ${(tier.revenue / 1000).toFixed(1)}K</div>
+                    <div>Avg: ${Math.round(tier.avgRevenue).toLocaleString()}</div>
+                    <div>Share: {tier.percentage.toFixed(1)}%</div>
+                    <div>Tier Rank: #{index + 1}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Additional Analysis Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        {/* Monthly Trend */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.9 }}
+          className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-xl border border-slate-200 dark:border-slate-700"
+        >
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center">
             <Activity className="w-5 h-5 text-green-500 mr-2" />
             Average Deal Size Trend
           </h3>
-          <ResponsiveContainer width="100%" height={250}>
+          <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={combinedData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
               <XAxis 
@@ -692,14 +855,14 @@ const CustomerPrediction: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.9 }}
+          transition={{ delay: 1.0 }}
           className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-xl border border-slate-200 dark:border-slate-700"
         >
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center">
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center">
             <Shield className="w-5 h-5 text-purple-500 mr-2" />
             Prediction Confidence
           </h3>
-          <ResponsiveContainer width="100%" height={250}>
+          <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={predictions}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
               <XAxis 

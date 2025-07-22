@@ -162,64 +162,38 @@ export const Dashboard: React.FC = () => {
   }, []);
 
   // Get unique values for dropdown options with improved filtering
-  const getUniqueValues = (field: keyof SalesRow, topN?: number): string[] => {
+  const getUniqueValues = (field: keyof SalesRow): string[] => {
     if (!salesData || salesData.length === 0) return [];
     
-    // Get all values and remove duplicates
-    const values: string[] = [...new Set(
+    // Get unique values, filter out empty/null, and sort
+    const uniqueValues = [...new Set(
       salesData
         .map((item: SalesRow) => item[field]?.toString())
         .filter((v: string | undefined): v is string => !!v && v.trim() !== '')
     )].sort();
     
-    if (topN && field === 'product_type') {
-      // Get top N product types by revenue, group others as 'Other'
-      const productRevenue: Record<string, number> = {};
-      salesData.forEach(item => {
-        const product = item.product_type;
-        if (product) {
-          productRevenue[product] = (productRevenue[product] || 0) + item.amount_paid;
-        }
-      });
-      
-      const sorted = Object.entries(productRevenue)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, topN)
-        .map(([name]) => name);
-      
-      return [...sorted, 'Other'];
-    }
-    
-    return values;
+    return uniqueValues;
   };
 
   const filterOptions = {
     sales_agent: getUniqueValues('sales_agent'),
     closing_agent: getUniqueValues('closing_agent'),
-    product_type: getUniqueValues('product_type', 5), // Top 5, rest as 'Other'
+    product_type: getUniqueValues('product_type'),
     service_tier: getUniqueValues('service_tier'),
     sales_team: getUniqueValues('sales_team'),
     data_month: getUniqueValues('data_month'),
     country: getUniqueValues('country')
   };
 
-  // Apply filters with unique value handling
+  // Apply filters
   useEffect(() => {
     let filtered = salesData;
     
     Object.entries(filters).forEach(([key, value]) => {
       if (value) {
-        if (key === 'product_type' && value === 'Other') {
-          // Handle 'Other' category for product types
-          const topProducts = getUniqueValues('product_type', 5).filter(p => p !== 'Other');
-          filtered = filtered.filter((item: SalesRow) => 
-            !topProducts.includes(item.product_type)
-          );
-        } else {
-          filtered = filtered.filter((item: SalesRow) => 
-            String(item[key as keyof SalesRow]) === value
-          );
-        }
+        filtered = filtered.filter((item: SalesRow) => 
+          String(item[key as keyof SalesRow]) === value
+        );
       }
     });
     
@@ -331,11 +305,7 @@ export const Dashboard: React.FC = () => {
   }
 
   const programStats = filteredData.reduce((acc: Record<string, {value: number, deals: number}>, item: SalesRow) => {
-    let name = item.product_type;
-    const topProducts = getUniqueValues('product_type', 5).filter(p => p !== 'Other');
-    if (!topProducts.includes(name)) {
-      name = 'Other';
-    }
+    const name = item.product_type || 'Unknown';
     
     if (!acc[name]) {
       acc[name] = { value: 0, deals: 0 };
@@ -680,8 +650,8 @@ export const Dashboard: React.FC = () => {
                 <Award className="w-6 h-6 text-purple-600" />
                 <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Closer Performance (Top 10)</h3>
               </div>
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={closerPerformance} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+              <ResponsiveContainer width="100%" height={500}>
+                <ComposedChart data={closerPerformance} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
                   <XAxis 
                     dataKey="name" 
@@ -691,7 +661,8 @@ export const Dashboard: React.FC = () => {
                     textAnchor="end"
                     height={80}
                   />
-                  <YAxis stroke="#6B7280" />
+                  <YAxis yAxisId="left" stroke="#6B7280" />
+                  <YAxis yAxisId="right" orientation="right" stroke="#6B7280" />
                   <Tooltip 
                     contentStyle={{ 
                       backgroundColor: '#1F2937', 
@@ -700,8 +671,10 @@ export const Dashboard: React.FC = () => {
                       color: '#F9FAFB'
                     }} 
                   />
-                  <Bar dataKey="amount" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
-                </BarChart>
+                  <Legend />
+                  <Bar yAxisId="left" dataKey="amount" fill="#8B5CF6" radius={[4, 4, 0, 0]} name="Revenue ($)" />
+                  <Line yAxisId="right" type="monotone" dataKey="deals" stroke="#F59E0B" strokeWidth={3} name="Deals Count" />
+                </ComposedChart>
               </ResponsiveContainer>
             </motion.div>
           </div>
