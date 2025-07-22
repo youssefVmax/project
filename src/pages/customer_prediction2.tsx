@@ -200,49 +200,60 @@ const CustomerPrediction: React.FC = () => {
   const [predictions, setPredictions] = useState<PredictionData[]>([]);
   const [combinedData, setCombinedData] = useState<PredictionData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    sales_agent: '',
+    closing_agent: '',
+    product_type: '',
+    service_tier: '',
+    country: '',
+    data_month: ''
+  });
+  const [filteredSalesData, setFilteredSalesData] = useState<SalesRow[]>([]);
 
   // Product distribution for pie chart - moved before conditional return
   const productDistribution = React.useMemo(() => {
+    const data = filteredSalesData.length > 0 ? filteredSalesData : salesData;
     const distribution = [
       { 
         name: 'IBO Players', 
-        value: salesData.filter(row => row.is_ibo_player).length, 
-        revenue: salesData.filter(row => row.is_ibo_player).reduce((sum, row) => sum + row.amount_paid, 0),
+        value: data.filter(row => row.is_ibo_player).length, 
+        revenue: data.filter(row => row.is_ibo_player).reduce((sum, row) => sum + row.amount_paid, 0),
         color: '#8B5CF6' 
       },
       { 
         name: 'BOB Players', 
-        value: salesData.filter(row => row.is_bob_player).length, 
-        revenue: salesData.filter(row => row.is_bob_player).reduce((sum, row) => sum + row.amount_paid, 0),
+        value: data.filter(row => row.is_bob_player).length, 
+        revenue: data.filter(row => row.is_bob_player).reduce((sum, row) => sum + row.amount_paid, 0),
         color: '#EC4899' 
       },
       { 
         name: 'Smarters', 
-        value: salesData.filter(row => row.is_smarters).length, 
-        revenue: salesData.filter(row => row.is_smarters).reduce((sum, row) => sum + row.amount_paid, 0),
+        value: data.filter(row => row.is_smarters).length, 
+        revenue: data.filter(row => row.is_smarters).reduce((sum, row) => sum + row.amount_paid, 0),
         color: '#10B981' 
       },
       { 
         name: 'IBO Pro', 
-        value: salesData.filter(row => row.is_ibo_pro).length, 
-        revenue: salesData.filter(row => row.is_ibo_pro).reduce((sum, row) => sum + row.amount_paid, 0),
+        value: data.filter(row => row.is_ibo_pro).length, 
+        revenue: data.filter(row => row.is_ibo_pro).reduce((sum, row) => sum + row.amount_paid, 0),
         color: '#F59E0B' 
       }
     ].filter(item => item.value > 0);
     
-    const totalCustomers = salesData.length;
+    const totalCustomers = data.length;
     return distribution.map(item => ({
       ...item,
       percentage: totalCustomers > 0 ? (item.value / totalCustomers) * 100 : 0,
       avgRevenue: item.value > 0 ? item.revenue / item.value : 0
     }));
-  }, [salesData]);
+  }, [salesData, filteredSalesData]);
 
   // Service tier distribution - moved before conditional return
   const serviceTierDistribution = React.useMemo(() => {
+    const data = filteredSalesData.length > 0 ? filteredSalesData : salesData;
     const tiers: Record<string, {count: number, revenue: number}> = {};
     
-    salesData.forEach(row => {
+    data.forEach(row => {
       const tier = row.service_tier || 'Unknown';
       if (!tiers[tier]) {
         tiers[tier] = { count: 0, revenue: 0 };
@@ -251,7 +262,7 @@ const CustomerPrediction: React.FC = () => {
       tiers[tier].revenue += row.amount_paid;
     });
     
-    const totalCustomers = salesData.length;
+    const totalCustomers = data.length;
     return Object.entries(tiers).map(([name, data], index) => ({
       name,
       value: data.count,
@@ -260,7 +271,29 @@ const CustomerPrediction: React.FC = () => {
       avgRevenue: data.count > 0 ? data.revenue / data.count : 0,
       color: ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#6366F1'][index % 6]
     })).sort((a, b) => b.value - a.value);
-  }, [salesData]);
+  }, [salesData, filteredSalesData]);
+
+  // Get unique values for filters
+  const getUniqueValues = (field: keyof SalesRow): string[] => {
+    if (!salesData || salesData.length === 0) return [];
+    
+    const uniqueValues = [...new Set(
+      salesData
+        .map((item: SalesRow) => item[field]?.toString())
+        .filter((v: string | undefined): v is string => !!v && v.trim() !== '')
+    )].sort();
+    
+    return uniqueValues;
+  };
+
+  const filterOptions = {
+    sales_agent: getUniqueValues('sales_agent'),
+    closing_agent: getUniqueValues('closing_agent'),
+    product_type: getUniqueValues('product_type'),
+    service_tier: getUniqueValues('service_tier'),
+    country: getUniqueValues('country'),
+    data_month: getUniqueValues('data_month')
+  };
 
   // Load CSV data
   useEffect(() => {
@@ -288,6 +321,23 @@ const CustomerPrediction: React.FC = () => {
         setLoading(false);
       });
   }, []);
+
+  // Apply filters
+  useEffect(() => {
+    if (salesData.length === 0) return;
+
+    let filtered = salesData;
+    
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) {
+        filtered = filtered.filter((item: SalesRow) => 
+          String(item[key as keyof SalesRow]) === value
+        );
+      }
+    });
+    
+    setFilteredSalesData(filtered);
+  }, [filters, salesData]);
 
   // Process historical data from CSV
   useEffect(() => {
@@ -367,6 +417,10 @@ const CustomerPrediction: React.FC = () => {
     setHistoricalData(processedData);
   }, [salesData]);
 
+  const handleFilterChange = (key: string, value: string) => {
+    setFilters((prev: typeof filters) => ({ ...prev, [key]: value }));
+  };
+
   // Generate predictions when historical data or settings change
   useEffect(() => {
     if (historicalData.length === 0) return;
@@ -395,11 +449,12 @@ const CustomerPrediction: React.FC = () => {
   }
 
   // Calculate KPIs from actual data
-  const totalCustomers = salesData.length;
-  const totalRevenue = salesData.reduce((sum, row) => sum + row.amount_paid, 0);
-  const totalCommission = salesData.reduce((sum, row) => sum + row.paid_per_month, 0);
+  const currentData = filteredSalesData.length > 0 ? filteredSalesData : salesData;
+  const totalCustomers = currentData.length;
+  const totalRevenue = currentData.reduce((sum, row) => sum + row.amount_paid, 0);
+  const totalCommission = currentData.reduce((sum, row) => sum + row.paid_per_month, 0);
   const avgDealSize = totalCustomers > 0 ? totalRevenue / totalCustomers : 0;
-  const closedDeals = salesData.filter(row => row.is_long_term).length; // All deals are closed as per your note
+  const closedDeals = currentData.length; // All deals are closed as per your note
   
   // Prediction insights
   const lastActual = historicalData[historicalData.length - 1];
@@ -409,7 +464,7 @@ const CustomerPrediction: React.FC = () => {
   const avgConfidence = predictions.length > 0 ? predictions.reduce((sum, p) => sum + p.confidence, 0) / predictions.length : 0;
 
   // Top performers from actual data
-  const agentStats = salesData.reduce((acc: Record<string, {revenue: number, deals: number}>, row) => {
+  const agentStats = currentData.reduce((acc: Record<string, {revenue: number, deals: number}>, row) => {
     if (!acc[row.sales_agent]) {
       acc[row.sales_agent] = { revenue: 0, deals: 0 };
     }
@@ -423,7 +478,7 @@ const CustomerPrediction: React.FC = () => {
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 5);
 
-  const closerStats = salesData.reduce((acc: Record<string, {revenue: number, deals: number}>, row) => {
+  const closerStats = currentData.reduce((acc: Record<string, {revenue: number, deals: number}>, row) => {
     if (!acc[row.closing_agent]) {
       acc[row.closing_agent] = { revenue: 0, deals: 0 };
     }
@@ -484,12 +539,44 @@ const CustomerPrediction: React.FC = () => {
         </p>
       </motion.div>
 
+      {/* Filters */}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.1 }}
+        className="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-xl border border-slate-200 dark:border-slate-700 mb-8"
+      >
+        <div className="flex items-center space-x-3 mb-6">
+          <Target className="w-6 h-6 text-blue-600" />
+          <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Data Filters</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          {Object.entries(filters).map(([key, value]) => (
+            <div key={key}>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 capitalize">
+                {key.replace(/([A-Z])/g, ' $1').replace('_', ' ')}
+              </label>
+              <select
+                value={value}
+                onChange={(e) => handleFilterChange(key, e.target.value)}
+                className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+              >
+                <option value="">All {key.replace(/([A-Z])/g, ' $1').replace('_', ' ')}</option>
+                {filterOptions[key as keyof typeof filterOptions].map((option: string) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+
       {/* Current Performance KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
         {[
           { title: 'Total Customers', value: totalCustomers.toLocaleString(), icon: Users, color: 'blue', description: 'All customers in database' },
           { title: 'Total Revenue', value: `$${(totalRevenue / 1000).toFixed(0)}K`, icon: DollarSign, color: 'green', description: 'Total revenue generated' },
-          { title: 'Closed Deals', value: totalCustomers.toLocaleString(), icon: Target, color: 'purple', description: 'All deals are closed' },
+          { title: 'Closed Deals', value: `${closedDeals} deals`, icon: Target, color: 'purple', description: 'All deals are closed' },
           { title: 'Avg Deal Size', value: `$${Math.round(avgDealSize).toLocaleString()}`, icon: Award, color: 'orange', description: 'Average revenue per customer' },
           { title: 'Total Commission', value: `$${(totalCommission / 1000).toFixed(0)}K`, icon: Crown, color: 'pink', description: 'Total commission earned' }
         ].map((metric, index) => (
@@ -1109,7 +1196,7 @@ const CustomerPrediction: React.FC = () => {
                 <p className="text-sm opacity-75">Confidence</p>
               </div>
               <div>
-                <p className="text-2xl font-bold">{new Set(salesData.map(row => row.country)).size}</p>
+                <p className="text-2xl font-bold">{new Set(currentData.map(row => row.country)).size}</p>
                 <p className="text-sm opacity-75">Countries</p>
               </div>
             </div>
