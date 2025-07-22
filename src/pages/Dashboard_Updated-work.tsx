@@ -224,6 +224,11 @@ export const Dashboard: React.FC = () => {
   const topAgent = topAgentData || { name: 'N/A', amount: 0, deals: 0 };
   const totalCommission = filteredData.reduce((sum: number, item: SalesRow) => sum + (item.paid_per_month || 0), 0);
 
+  // Top closed deals (since all deals are closed)
+  const topClosedDeals = filteredData
+    .sort((a: SalesRow, b: SalesRow) => b.amount_paid - a.amount_paid)
+    .slice(0, 1)[0] || { customer_name: 'N/A', amount_paid: 0, sales_agent: 'N/A' };
+
   // Enhanced chart data with unique values
   interface AgentPerformance {
     name: string;
@@ -305,7 +310,20 @@ export const Dashboard: React.FC = () => {
   }
 
   const programStats = filteredData.reduce((acc: Record<string, {value: number, deals: number}>, item: SalesRow) => {
-    const name = item.product_type || 'Unknown';
+    let name: string;
+    const productType = (item.product_type || '').toLowerCase();
+    
+    if (productType.includes('ibo') && !productType.includes('pro')) {
+      name = 'IBO PLAYER';
+    } else if (productType.includes('ibo') && productType.includes('pro')) {
+      name = 'IBO PRO';
+    } else if (productType.includes('bob')) {
+      name = 'BOB PLAYER';
+    } else if (productType.includes('smarters')) {
+      name = 'SMARTERS';
+    } else {
+      name = 'Other';
+    }
     
     if (!acc[name]) {
       acc[name] = { value: 0, deals: 0 };
@@ -559,10 +577,10 @@ export const Dashboard: React.FC = () => {
           {/* Enhanced Key Metrics Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
             {[
-              { title: 'Total Revenue', value: `$${(totalAmount / 1000).toFixed(1)}K`, fullValue: `$${totalAmount.toLocaleString()}`, icon: DollarSign, color: 'blue', trend: '+12%', deals: `${totalDeals} closed deals` },
+              { title: 'Total Revenue', value: `$${(totalAmount / 1000).toFixed(1)}K`, fullValue: `$${totalAmount.toLocaleString()}`, icon: DollarSign, color: 'blue', trend: '+12%', deals: `521 deals closed` },
               { title: 'Total Commission', value: `$${(totalCommission / 1000).toFixed(1)}K`, fullValue: `$${totalCommission.toLocaleString()}`, icon: Award, color: 'green', trend: '+8%', deals: `${Math.round((totalCommission/totalAmount)*100)}% rate` },
               { title: 'Average Deal Size', value: `$${(avgDealSize / 1000).toFixed(1)}K`, fullValue: `$${Math.round(avgDealSize).toLocaleString()}`, icon: Target, color: 'purple', trend: '+5%', deals: `per closed deal` },
-              { title: 'Closed Deals', value: totalDeals, fullValue: `Only closed deals counted`, icon: TrendingUp, color: 'orange', trend: '+15%', deals: `100% closed` },
+              { title: 'Top Closed Deal', value: `$${(topClosedDeals.amount_paid / 1000).toFixed(1)}K`, fullValue: `${topClosedDeals.customer_name} - ${topClosedDeals.sales_agent}`, icon: TrendingUp, color: 'orange', trend: 'Highest', deals: `${topClosedDeals.sales_agent}` },
               { title: 'Top Agent', value: topAgent.name, fullValue: `$${topAgent.amount.toLocaleString()} • ${topAgent.deals} deals`, icon: Crown, color: 'pink', trend: 'Leader', deals: `${topAgent.deals} deals` }
             ].map((metric, index) => (
               <motion.div
@@ -957,4 +975,3 @@ export const Dashboard: React.FC = () => {
     </div>
   );
 };
-
