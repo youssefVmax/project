@@ -2,10 +2,10 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useTheme } from './hooks/useTheme';
 import { Navigation } from './components/Navigation';
-import { Dashboard } from './pages/Dashboard_Updated-work';
+import Dashboard from './pages/enhanced_dashboard (1).tsx';
 import { DataEntry } from './pages/DataEntry';
 import { SalesTable } from './pages/SalesTable';
-import CustomerPrediction from './pages/customer_prediction2';
+import CustomerPrediction from './pages/enhanced_prediction_component.tsx';
 import { CompanyOverview } from './pages/CompanyOverview';
 import { Footer } from './components/Footer';
 

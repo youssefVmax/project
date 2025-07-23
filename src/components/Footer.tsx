@@ -44,18 +44,11 @@ export const Footer: React.FC = () => {
             </ul>
           </div>
           
-          <div>
-            <h3 className="text-slate-900 dark:text-white font-semibold mb-4">Company</h3>
-            <ul className="space-y-2 text-slate-600 dark:text-slate-400">
-              <li><a href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors">VMax IPTV</a></li>
-              <li><a href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors">Support</a></li>
-              <li><a href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors">Contact</a></li>
-            </ul>
-          </div>
+    
         </div>
         
         <div className="border-t border-stone-200 dark:border-slate-800 mt-12 pt-8 flex flex-col sm:flex-row justify-between items-center">
-          <p className="text-slate-600 dark:text-slate-400">© 2025 VMax Analytics. All rights reserved.</p>
+          <p className="text-slate-600 dark:text-slate-400">© 2025 FlashX Company. All rights reserved.</p>
           <div className="flex space-x-6 mt-4 sm:mt-0">
             <a href="#" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors text-sm">Privacy Policy</a>
             <a href="#" className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors text-sm">Terms of Service</a>
