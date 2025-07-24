@@ -118,6 +118,47 @@ export const EnhancedDashboard: React.FC = () => {
     Payment: ''
   });
 
+  // --- Compute paymentData for Payment Methods PieChart ---
+  const paymentData = useMemo(() => {
+    if (!filteredData || filteredData.length === 0) return [
+      { name: 'PayPal', value: 0, deals: 0, percentage: 0 },
+      { name: 'Website', value: 0, deals: 0, percentage: 0 }
+    ];
+    // Aggregate by Payment method
+    const totals: Record<string, { value: number; deals: number }> = {};
+    let totalAmount = 0;
+    filteredData.forEach(item => {
+      const method = item.Payment?.toLowerCase().includes('w') ? 'Website' : 'PayPal';
+      if (!totals[method]) totals[method] = { value: 0, deals: 0 };
+      totals[method].value += item.amount_paid || 0;
+      totals[method].deals += 1;
+      totalAmount += item.amount_paid || 0;
+    });
+    // Calculate percentage for each
+    return ['PayPal', 'Website'].map(name => ({
+      name,
+      value: totals[name]?.value || 0,
+      deals: totals[name]?.deals || 0,
+      percentage: totalAmount > 0 ? ((totals[name]?.value || 0) / totalAmount) * 100 : 0
+    }));
+  }, [filteredData]);
+  // --- END paymentData ---
+
+  const [salesData, setSalesData] = useState<SalesRow[]>([]);
+  const [filteredData, setFilteredData] = useState<SalesRow[]>([]);
+  const [filters, setFilters] = useState({
+    Customer_Name: '',
+    amount_paid: '',
+    sales_agent: '',
+    closing_agent: '',
+    product_type: '',
+    service_tier: '',
+    sales_team: '',
+    data_month: '',
+    country: '',
+    Payment: ''
+  });
+
   // Compute programData for PieChart and legend
   const programData = useMemo(() => {
     if (!filteredData || filteredData.length === 0) return [];
@@ -835,7 +876,7 @@ export const EnhancedDashboard: React.FC = () => {
               color: 'pink', 
               trend: 'Leader', 
               deals: `${topAgent.deals} deals`,
-              gradient: 'from-pink-500 to-rose-600'
+              gradient: 'from-pink-400 to-rose-500'
             },
             { 
               title: 'Top Closer', 
@@ -947,46 +988,7 @@ export const EnhancedDashboard: React.FC = () => {
         </div>
 
 
-        {/* Payment Methods Analysis */}
-        <motion.div
-          variants={chartVariants}
-          initial="hidden"
-          animate="visible"
-          transition={{ delay: 0.6 }}
-          className="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-xl border border-slate-200 dark:border-slate-700"
-        >
-          <div className="flex items-center space-x-3 mb-6">
-            <CreditCard className="w-6 h-6 text-green-600" />
-            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Payment Methods Analysis</h3>
-            <span className="text-sm text-slate-500 dark:text-slate-400">Based on invoice_link processing</span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {(() => {
-              const paymentStats: Record<string, { count: number, amount: number }> = {};
-              filteredData.forEach(item => {
-                const payment = item.Payment || 'Unknown';
-                if (!paymentStats[payment]) {
-                  paymentStats[payment] = { count: 0, amount: 0 };
-                }
-                paymentStats[payment].count += 1;
-                paymentStats[payment].amount += item.amount_paid;
-              });
-              
-              return Object.entries(paymentStats)
-                .sort((a, b) => b[1].amount - a[1].amount)
-                .slice(0, 3)
-                .map(([method, stats], index) => (
-                  <div key={method} className="bg-slate-50 dark:bg-slate-700 rounded-xl p-4">
-                    <h4 className="font-semibold text-slate-900 dark:text-white mb-2">
-                      {method === 'paypal' ? '💳 PayPal' : `🔗 ${method}`}
-                    </h4>
-                    <p className="text-2xl font-bold text-green-600">${stats.amount.toLocaleString()}</p>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">{stats.count} transactions</p>
-                  </div>
-                ));
-            })()}
-          </div>
-        </motion.div>
+     
 
         {/* Revenue Growth Chart */}
         <motion.div
@@ -1377,14 +1379,6 @@ export const EnhancedDashboard: React.FC = () => {
                 <p className="text-lg">${insights.highestSingleDeal.toLocaleString()}</p>
               </div>
               <div className="bg-white/10 rounded-xl p-4">
-                <h4 className="font-semibold mb-2">👥 Total Agents</h4>
-                <p className="text-lg">{insights.totalAgents}</p>
-              </div>
-              <div className="bg-white/10 rounded-xl p-4">
-                <h4 className="font-semibold mb-2">🎯 Total Closers</h4>
-                <p className="text-lg">{insights.totalClosers}</p>
-              </div>
-              <div className="bg-white/10 rounded-xl p-4">
               <h4 className="font-semibold mb-2">
                 <Clock className="w-5 h-5 mr-2" />
                 Top Customer by Duration
@@ -1506,7 +1500,82 @@ export const EnhancedDashboard: React.FC = () => {
               </motion.div>
             ))}
           </div>
+
         </motion.div>  
+        <motion.div
+          variants={chartVariants}
+          initial="hidden"
+          animate="visible"
+          transition={{ delay: 0.6 }}
+          className="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-xl border border-slate-200 dark:border-slate-700"
+        >
+          <div className="flex items-center space-x-3 mb-6">
+            <CreditCard className="w-6 h-6 text-green-600" />
+            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Payment Methods Distribution</h3>
+            <span className="text-sm text-slate-500 dark:text-slate-400">PayPal vs Website payments</span>
+          </div>
+          <div className="flex flex-col lg:flex-row lg:items-center lg:space-x-8">
+            <ResponsiveContainer width={400} height={400}>
+              <PieChart>
+                <Pie
+                  data={paymentData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={140}
+                  labelLine={false}
+                  label={renderCustomLabel}
+                  isAnimationActive={true}
+                >
+                  {paymentData.map((entry, idx) => (
+                    <Cell key={`cell-payment-${entry.name}`} fill={entry.name === 'PayPal' ? '#0070BA' : '#FF6B35'} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  formatter={(value: number, name: string) => [`$${value.toLocaleString()}`, name]}
+                  contentStyle={{ 
+                    backgroundColor: '#1F2937', 
+                    border: 'none', 
+                    borderRadius: '12px',
+                    color: '#F9FAFB'
+                  }} 
+                />
+                <Legend verticalAlign="bottom" height={36} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="flex-1 mt-6 lg:mt-0 space-y-4">
+              {paymentData.map((payment, index) => (
+                <div key={payment.name} className="bg-slate-50 dark:bg-slate-700 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-semibold text-slate-900 dark:text-white flex items-center">
+                      {payment.name === 'PayPal' ? (
+                        <>
+                          <div className="w-4 h-4 bg-blue-600 rounded-full mr-2"></div>
+                          💳 PayPal
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-4 h-4 bg-orange-500 rounded-full mr-2"></div>
+                          🌐 Website
+                        </>
+                      )}
+                    </h4>
+                    <span className="text-sm text-slate-500 dark:text-slate-400">
+                      {payment.percentage.toFixed(1)}%
+                    </span>
+                  </div>
+                  <p className="text-2xl font-bold text-green-600 mb-1">
+                    ${payment.value.toLocaleString()}
+                  </p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    {payment.deals} transactions
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
       </>
     </div>
   );

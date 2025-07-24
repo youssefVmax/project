@@ -1,73 +1,93 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Users, Award, TrendingUp, Tv, Satellite, Globe, Shield, Building2, BarChart, Radio, Server, Monitor, Film, Headphones, Activity, BookOpen, User, Briefcase, Star, MessageCircle, Phone, Mail } from "lucide-react";
+import { Users, Award, TrendingUp, Tv, Satellite, Globe, Shield, Building2, BarChart, Radio, Server, Monitor, Film, Headphones, Activity, BookOpen, User, Briefcase, Star, MessageCircle, Phone, Mail, MapPin } from "lucide-react";
+
 export const CompanyOverview: React.FC = () => {
   const services = [
     {
       name: 'VMax IPTV',
       description: 'Premium IPTV streaming service with 4K quality and global content',
-      features: ['4K Ultra HD Streaming', '10,000+ Channels', 'Global Content', '24/7 Support'],
+      features: ['4K Ultra HD Streaming', '10,000+ Channels', 'Global Content', '24/7 Support', 'Multi-device Compatibility', 'Catch-up TV'],
       icon: <Tv className="w-8 h-8 text-blue-600" />,
-      color: 'blue'
+      color: 'blue',
+      link: 'https://vmaxllc.us/'
     },
     {
       name: 'SkyLive TV',
       description: 'Advanced satellite TV solutions with cutting-edge technology',
-      features: ['Satellite Broadcasting', 'HD Quality', 'Multi-Device Support', 'Live Sports'],
+      features: ['Satellite Broadcasting', 'HD Quality', 'Multi-Device Support', 'Live Sports', 'PVR Functionality', 'Interactive TV'],
       icon: <Satellite className="w-8 h-8 text-purple-600" />,
-      color: 'purple'
+      color: 'purple',
+      link: 'https://skylivellc.us/'
+    },
+    {
+      name: 'Enterprise Solutions',
+      description: 'Custom IPTV solutions for businesses and organizations',
+      features: ['Custom Channel Lineups', 'Branded Applications', 'Hotel TV Systems', 'Corporate Communications', 'Digital Signage', 'API Integration'],
+      icon: <Server className="w-8 h-8 text-green-600" />,
+      color: 'green',
+      link: '#enterprise'
     }
   ];
 
   const stats = [
-    { label: 'Active Subscribers', value: '1.2M+', icon: Users, color: 'blue' },
-    { label: 'Countries Served', value: '120+', icon: Globe, color: 'green' },
-    { label: 'Content Channels', value: '20K+', icon: Tv, color: 'purple' },
-    { label: 'Uptime Guarantee', value: '99.99%', icon: Shield, color: 'orange' }
+    { label: 'Active Subscribers', value: '1.8M+', icon: Users, color: 'blue' },
+    { label: 'Countries Served', value: '150+', icon: Globe, color: 'green' },
+    { label: 'Content Channels', value: '25K+', icon: Tv, color: 'purple' },
+    { label: 'Uptime Guarantee', value: '99.99%', icon: Shield, color: 'orange' },
+    { label: 'Reseller Partners', value: '500+', icon: Briefcase, color: 'cyan' },
+    { label: 'Content Providers', value: '100+', icon: Film, color: 'pink' }
   ];
+  
   const leadership = [
     {
-      name: "Miss Nour Eskandr",
-      title: "Manager of Company FlashX",
-      bio: "Visionary leader with 10+ years in media technology. Nour has driven FlashX's expansion to 120+ countries through innovative strategies and partnerships.",
+      name: "Nour Eskandr",
+      title: "CEO & Founder",
+      bio: "Visionary leader with 10+ years in media technology. Nour has driven FlashX's expansion to 150+ countries through innovative strategies and partnerships.",
       contact: "nour.eskandr@flashxtv.com",
       color: "from-purple-600 to-indigo-700",
       achievements: [
         "Led company through 300% growth in 3 years",
         "Recipient of Media Innovation Award 2023",
-        "Make a new System for FlashX to led the market"
+        "Pioneered FlashX's global expansion strategy",
+        "Established key partnerships with content providers"
       ]
     },
     {
-      name: "Mr. Hassan",
-      title: "Manager of Company FlashX",
-      bio: "Technology expert with deep expertise in streaming infrastructure. Hassan has architected FlashX's award-winning platform serving 1.2M+ subscribers.",
-      contact: "hassan.tech@flashxtv.com",
+      name: "Hassan Ahmed",
+      title: "CTO & Technical Director",
+      bio: "Technology expert with deep expertise in streaming infrastructure. Hassan has architected FlashX's award-winning platform serving 1.8M+ subscribers.",
+      contact: "hassan.ahmed@flashxtv.com",
       color: "from-blue-600 to-cyan-500",
       achievements: [
-        "Led company through 300% growth in 3 years",
         "Developed proprietary adaptive streaming technology",
         "Built global CDN with 200+ edge locations",
-    
+        "Implemented advanced DRM solutions",
+        "Led development of VMax and SkyLive platforms"
       ]
     }
   ];
+  
   const achievements = [
     'Middle East\'s fastest growing IPTV provider (2024)',
     'Award-winning streaming technology',
     'ISO 27001 certified security infrastructure',
-    'Partnership with major companies',
+    'Partnerships with major content providers',
     'Global CDN with 200+ edge locations',
-    '24/7 multilingual customer support'
+    '24/7 multilingual customer support',
+    'Featured in Streaming Media Magazine',
+    'Recognized for innovation at CES 2023'
   ];
 
   const technologies = [
     { name: 'Adaptive Bitrate Streaming', icon: Activity },
-    { name: 'Content Delivery Network', icon: Globe },
-    { name: 'Digital Rights Management', icon: Shield },
-    { name: 'EPG Electronic Program Guide', icon: BookOpen },
+    { name: 'Global Content Delivery Network', icon: Globe },
+    { name: 'Advanced DRM Security', icon: Shield },
+    { name: 'Electronic Program Guide (EPG)', icon: BookOpen },
     { name: 'Multi-Device Compatibility', icon: Monitor },
-    { name: 'Video on Demand Library', icon: Film }
+    { name: 'Video on Demand (VOD)', icon: Film },
+    { name: 'Cloud DVR Technology', icon: Server },
+    { name: 'AI-Powered Recommendations', icon: Headphones }
   ];
 
   return (
@@ -84,10 +104,10 @@ export const CompanyOverview: React.FC = () => {
           </div>
           <div>
             <h1 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white">
-              FlashX TV 
-          </h1>
+              FlashX Group
+            </h1>
             <p className="text-xl text-slate-600 dark:text-slate-400 mt-2">
-              Leading Global IPTV Service Provider
+              Global Leader in IPTV & Streaming Solutions
             </p>
           </div>
         </div>
@@ -98,10 +118,16 @@ export const CompanyOverview: React.FC = () => {
           transition={{ delay: 0.3 }}
           className="max-w-4xl mx-auto mt-6"
         >
-          <p className="text-lg text-slate-700 dark:text-slate-300">
+          <p className="text-lg text-slate-700 dark:text-slate-300 mb-4">
             Since 2015, FlashX has been revolutionizing the entertainment industry with cutting-edge 
-            IPTV technology, delivering premium content to over 1.2 million subscribers worldwide.
+            IPTV technology, delivering premium content to over 1.8 million subscribers worldwide through 
+            our flagship brands <span className="font-semibold text-blue-600">VMax IPTV</span> and <span className="font-semibold text-purple-600">SkyLive TV</span>.
           </p>
+          
+          <div className="flex items-center justify-center mt-4 text-slate-600 dark:text-slate-400">
+            <MapPin className="w-5 h-5 mr-2" />
+            <span>Headquarters: Brooklyn, New York, USA</span>
+          </div>
         </motion.div>
       </motion.div>
 
@@ -110,7 +136,7 @@ export const CompanyOverview: React.FC = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-16"
       >
         {stats.map((stat, index) => (
           <motion.div
@@ -137,16 +163,16 @@ export const CompanyOverview: React.FC = () => {
         className="mb-16"
       >
         <h2 className="text-3xl font-bold text-slate-900 dark:text-white text-center mb-8">
-          Our Services
+          Our Brands & Services
         </h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {services.map((service, index) => (
             <motion.div
               key={service.name}
-              initial={{ opacity: 0, x: index % 2 === 0 ? -20 : 20 }}
-              animate={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 + index * 0.2 }}
-              className="bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300"
+              className="bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300 flex flex-col h-full"
             >
               <div className="flex items-center space-x-4 mb-6">
                 <div className={`w-16 h-16 rounded-2xl bg-${service.color}-100 dark:bg-${service.color}-900/30 flex items-center justify-center`}>
@@ -158,7 +184,7 @@ export const CompanyOverview: React.FC = () => {
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-3 mb-6 flex-grow">
                 {service.features.map((feature, featureIndex) => (
                   <div key={featureIndex} className="flex items-center space-x-3">
                     <div className={`w-2 h-2 rounded-full bg-${service.color}-500`}></div>
@@ -166,6 +192,15 @@ export const CompanyOverview: React.FC = () => {
                   </div>
                 ))}
               </div>
+              
+              <motion.a
+                href={service.link}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`mt-auto bg-gradient-to-r from-${service.color}-600 to-${service.color}-700 text-white px-4 py-2 rounded-lg font-medium text-center`}
+              >
+                Learn More
+              </motion.a>
             </motion.div>
           ))}
         </div>
@@ -181,20 +216,20 @@ export const CompanyOverview: React.FC = () => {
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold mb-4">Our Technology</h2>
           <p className="text-xl leading-relaxed max-w-4xl mx-auto">
-            FlashX leverages cutting-edge technology to deliver seamless streaming experiences
+            FlashX leverages cutting-edge technology to deliver seamless streaming experiences across all platforms
           </p>
         </div>
         
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-6">
           {technologies.map((tech, index) => (
             <motion.div
               key={tech.name}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.7 + index * 0.1 }}
-              className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center"
+              className="bg-white/10 backdrop-blur-sm rounded-xl p-5 text-center flex flex-col items-center"
             >
-              <div className="w-12 h-12 mx-auto mb-3 flex items-center justify-center">
+              <div className="w-12 h-12 mb-3 flex items-center justify-center bg-blue-500/20 rounded-lg">
                 <tech.icon className="w-8 h-8" />
               </div>
               <h3 className="font-semibold">{tech.name}</h3>
@@ -213,16 +248,16 @@ export const CompanyOverview: React.FC = () => {
         <h2 className="text-3xl font-bold text-slate-900 dark:text-white text-center mb-8">
           Our Achievements
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {achievements.map((achievement, index) => (
             <motion.div
               key={achievement}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.9 + index * 0.1 }}
-              className="flex items-center space-x-3 p-4 bg-slate-50 dark:bg-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
+              className="flex items-start space-x-3 p-4 bg-slate-50 dark:bg-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
             >
-              <Award className="w-6 h-6 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+              <Award className="w-6 h-6 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-1" />
               <p className="text-slate-700 dark:text-slate-300">{achievement}</p>
             </motion.div>
           ))}
@@ -240,29 +275,32 @@ export const CompanyOverview: React.FC = () => {
           Content Library
         </h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
-            { name: 'Live Sports', icon: Activity, count: '500+ Channels' },
-            { name: 'Movies', icon: Film, count: '50,000+' },
-            { name: 'TV Series', icon: Tv, count: '15,000+ Shows' },
-            { name: 'News Channels', icon: Radio, count: '300+ Global' }
+            { name: 'Live Sports', icon: Activity, count: '500+ Channels', description: 'All major leagues and events worldwide' },
+            { name: 'Movies', icon: Film, count: '50,000+ Titles', description: 'New releases and classic films' },
+            { name: 'TV Series', icon: Tv, count: '15,000+ Shows', description: 'Complete seasons and box sets' },
+            { name: 'News Channels', icon: Radio, count: '300+ Global', description: '24/7 news coverage from every continent' }
           ].map((item, index) => (
             <motion.div
               key={item.name}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 1.1 + index * 0.1 }}
-              className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-lg border border-slate-200 dark:border-slate-700 text-center"
+              className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-lg border border-slate-200 dark:border-slate-700 text-center flex flex-col h-full"
             >
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                 <item.icon className="w-8 h-8 text-blue-600 dark:text-blue-400" />
               </div>
               <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{item.name}</h3>
-              <p className="text-slate-600 dark:text-slate-400">{item.count}</p>
+              <p className="text-2xl text-slate-800 dark:text-slate-200 font-bold mb-3">{item.count}</p>
+              <p className="text-slate-600 dark:text-slate-400 mt-auto">{item.description}</p>
             </motion.div>
           ))}
         </div>
       </motion.div>
+      
+      {/* Leadership */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -331,12 +369,6 @@ export const CompanyOverview: React.FC = () => {
                     <MessageCircle className="w-4 h-4 mr-1" />
                     <span>Send Message</span>
                   </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="flex items-center text-purple-600 dark:text-purple-400"
-                  >
-                  </motion.button>
                 </div>
               </div>
             </motion.div>
@@ -361,6 +393,10 @@ export const CompanyOverview: React.FC = () => {
         transition={{ delay: 1.2 }}
         className="mt-12 text-center bg-gradient-to-r from-blue-50 to-purple-50 dark:from-slate-800 dark:to-slate-900 rounded-2xl p-8 border border-blue-200 dark:border-slate-700"
       >
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-full w-20 h-20 mx-auto flex items-center justify-center mb-6">
+          <Building2 className="w-10 h-10 text-white" />
+        </div>
+        
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
           Join the FlashX Experience
         </h2>
@@ -368,6 +404,7 @@ export const CompanyOverview: React.FC = () => {
           Experience the future of television with our premium IPTV services. Contact us to become a reseller
           or get a personalized demo of our enterprise solutions.
         </p>
+        
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -383,6 +420,23 @@ export const CompanyOverview: React.FC = () => {
           >
             Request Enterprise Demo
           </motion.button>
+        </div>
+        
+        <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
+          <div className="flex flex-col sm:flex-row justify-center gap-6 text-slate-600 dark:text-slate-400">
+            <div className="flex items-center">
+              <Phone className="w-5 h-5 mr-2" />
+              <span>+1 (718) 555-0199</span>
+            </div>
+            <div className="flex items-center">
+              <Mail className="w-5 h-5 mr-2" />
+              <span>info@flashxgroup.com</span>
+            </div>
+            <div className="flex items-center">
+              <MapPin className="w-5 h-5 mr-2" />
+              <span>Brooklyn, New York, USA</span>
+            </div>
+          </div>
         </div>
       </motion.div>
     </div>

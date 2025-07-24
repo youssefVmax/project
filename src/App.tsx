@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useTheme } from './hooks/useTheme';
 import { Navigation } from './components/Navigation';
-import  Dashboard  from './pages/enhanced_dashboard_fixed.tsx';
+import  Dashboard  from './pages/Dashboardfinaly.tsx'
 import { DataEntry } from './pages/DataEntry';
 import { SalesTable } from './pages/SalesTable_improved.tsx';
 import CustomerPrediction from './pages/enhanced_prediction_component.tsx';
