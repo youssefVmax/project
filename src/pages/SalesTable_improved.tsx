@@ -19,6 +19,8 @@ interface SalesRow {
   month: string;
   startDate: string;
   endDate: string;
+  startDateParsed: Date;
+  endDateParsed: Date;
 }
 
 export const SalesTable: React.FC = () => {
@@ -26,8 +28,24 @@ export const SalesTable: React.FC = () => {
   const [realTimeEntries, setRealTimeEntries] = useState<SalesEntry[]>([]);
   const [salesData, setSalesData] = useState<SalesRow[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortField, setSortField] = useState('date');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [sortField, setSortField] = useState('startDate');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  // Helper function to parse date strings
+  const parseDate = (dateStr: string): Date => {
+    if (!dateStr) return new Date(0);
+    
+    // Handle different date formats (M/D/YYYY or MM/DD/YYYY)
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+      const month = parseInt(parts[0]) - 1; // JavaScript months are 0-indexed
+      const day = parseInt(parts[1]);
+      const year = parseInt(parts[2]);
+      return new Date(year, month, day);
+    }
+    
+    return new Date(dateStr);
+  };
 
   // Load CSV data
   useEffect(() => {
@@ -53,6 +71,8 @@ export const SalesTable: React.FC = () => {
                 month: row.data_month || '',
                 startDate: row.signup_date || '',
                 endDate: row.end_Date || '',
+                startDateParsed: parseDate(row.signup_date || ''),
+                endDateParsed: parseDate(row.end_Date || ''),
               }));
             setCsvData(rows);
           },
@@ -91,6 +111,8 @@ export const SalesTable: React.FC = () => {
       month: entry.month,
       startDate: entry.startDate,
       endDate: entry.endDate,
+      startDateParsed: parseDate(entry.startDate),
+      endDateParsed: parseDate(entry.endDate),
     }));
     
     const combined = [...csvData, ...convertedRealTimeData];
@@ -106,8 +128,19 @@ export const SalesTable: React.FC = () => {
        item.server.toLowerCase().includes(searchTerm.toLowerCase()))
     )
     .sort((a: SalesRow, b: SalesRow) => {
-      const aValue = a[sortField as keyof SalesRow];
-      const bValue = b[sortField as keyof SalesRow];
+      let aValue: any, bValue: any;
+      
+      // Handle date sorting specially
+      if (sortField === 'startDate') {
+        aValue = a.startDateParsed.getTime();
+        bValue = b.startDateParsed.getTime();
+      } else if (sortField === 'endDate') {
+        aValue = a.endDateParsed.getTime();
+        bValue = b.endDateParsed.getTime();
+      } else {
+        aValue = a[sortField as keyof SalesRow];
+        bValue = b[sortField as keyof SalesRow];
+      }
       
       if (sortDirection === 'asc') {
         return aValue > bValue ? 1 : -1;
@@ -126,7 +159,7 @@ export const SalesTable: React.FC = () => {
   };
 
   const exportToCSV = () => {
-    const headers = ['ID', 'CustomerName', 'Agent', 'Closer', 'Team', 'Amount', 'Duration Months', 'Program', 'Server', 'Month', 'StartDate ', 'EndDate'];
+    const headers = ['ID', 'CustomerName', 'Agent', 'Closer', 'Team', 'Amount', 'Duration Months', 'Program', 'Server', 'Month', 'StartDate', 'EndDate'];
     const csvContent = [
       headers.join(','),
       ...filteredData.map((row: SalesRow) => 
@@ -163,22 +196,20 @@ export const SalesTable: React.FC = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
-        className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-lg border border-slate-200 dark:border-slate-900 mb-6"
+        className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-lg border border-slate-200 dark:border-slate-700 mb-6"
       >
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="flex flex-col md:flex-row gap-4 flex-1">
-            <div className="relative">
+            <div className="relative flex-1 max-w-2xl">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Search agents, closers, programs..."
+                placeholder="Search customers, agents, closers, programs..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full md:w-80"
+                className="pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full"
               />
             </div>
-            
-
           </div>
           
           <motion.button
@@ -193,16 +224,16 @@ export const SalesTable: React.FC = () => {
         </div>
       </motion.div>
 
-      {/* Table */}
+      {/* Table Container with Fixed Height and Scroll */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-900 overflow-hidden"
+        transition={{ delay: 0.4 }}
+        className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden"
       >
-        <div className="overflow-x-auto">
+        <div className="h-[800px] overflow-y-auto">
           <table className="w-full">
-            <thead className="bg-slate-50 dark:bg-slate-900">
+            <thead className="bg-slate-50 dark:bg-slate-700 sticky top-0 z-10">
               <tr>
                 {[
                   { key: 'id', label: 'ID' },
@@ -251,13 +282,13 @@ export const SalesTable: React.FC = () => {
                     {row.CustomerName}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-white">
-                    {row.Team}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-white">
                     {row.agent}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-white">
                     {row.closer}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-white">
+                    {row.Team}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600 dark:text-green-400">
                     ${row.amount.toLocaleString()}
@@ -265,7 +296,7 @@ export const SalesTable: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-white">
                     {row.duration_months}
                   </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-white">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-white">
                     <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full text-xs">
                       {row.program}
                     </span>
@@ -279,10 +310,14 @@ export const SalesTable: React.FC = () => {
                     {row.month}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-white">
-                    {row.startDate}
+                    <span className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-2 py-1 rounded-full text-xs">
+                      {row.startDate}
+                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-white">
-                    {row.endDate}
+                    <span className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 px-2 py-1 rounded-full text-xs">
+                      {row.endDate}
+                    </span>
                   </td>
                 </motion.tr>
               ))}
@@ -318,11 +353,21 @@ export const SalesTable: React.FC = () => {
             </p>
             <p className="text-slate-600 dark:text-slate-400">Total Revenue</p>
           </div>
-
           <div>
+            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              {Math.round(filteredData.reduce((sum, item) => sum + item.duration_months, 0) / filteredData.length || 0)}
+            </p>
+            <p className="text-slate-600 dark:text-slate-400">Avg Duration (Months)</p>
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+              ${Math.round(filteredData.reduce((sum, item) => sum + item.amount, 0) / filteredData.length || 0).toLocaleString()}
+            </p>
+            <p className="text-slate-600 dark:text-slate-400">Avg Deal Size</p>
           </div>
         </div>
       </motion.div>
     </div>
   );
 };
+

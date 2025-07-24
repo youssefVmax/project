@@ -15,7 +15,7 @@ export const Footer: React.FC = () => {
               Comprehensive sales analytics and data visualization platform for VMax company.
             </p>
             <p className="text-slate-600 dark:text-slate-400 mb-6 max-w-md">
-              <strong>Created by:</strong> Youssef Bassiony - Data Scientist<br/>
+              <strong>Created by:</strong> Youssef Bassiony - Data Scientist and Software Engineer<br/>
               Specialized in business intelligence and data analytics solutions.
             </p>
             <div className="flex space-x-4">

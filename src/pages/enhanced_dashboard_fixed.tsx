@@ -12,7 +12,7 @@ import {
   BarChart2, BarChart3, PieChart as PieChartIcon, Activity, Zap, Star, Crown,
   TrendingDown, ArrowUp, ArrowDown, Equal, Save, Plus, Edit, Eye,
   Sparkles, Trophy, Medal, Flame, Rocket, Diamond, Heart, ThumbsUp,
-  Brain, AlertCircle, CheckCircle, Clock, Shield
+  Brain, AlertCircle, CheckCircle, Clock, Shield, User, CreditCard
 } from 'lucide-react';
 
 const CSV_PATH = '/data/Three-month-dashboard-R.csv';
@@ -56,10 +56,13 @@ interface SalesRow {
   is_above_avg: boolean;
   paid_rank: number;
   Payment: string;
-
 }
 
 function transformRow(row: any): SalesRow {
+  // Payment method logic: if invoice_link starts with 'w' or 'W', keep same value, otherwise set to 'paypal'
+  const invoiceLink = row.invoice_link || '';
+  const paymentMethod = invoiceLink.toLowerCase().startsWith('w') ? invoiceLink : 'paypal';
+
   return {
     signup_date: row.signup_date || '',
     end_date: row.end_date || '',
@@ -81,7 +84,7 @@ function transformRow(row: any): SalesRow {
     subscription_duration: row.subscription_duration || '',
     data_month: row.data_month || '',
     data_year: row.data_year || '',
-    invoice_link: row.invoice_link || '',
+    invoice_link: invoiceLink,
     is_ibo_player: row.is_ibo_player === 'true',
     is_bob_player: row.is_bob_player === 'true',
     is_smarters: row.is_smarters === 'true',
@@ -93,7 +96,7 @@ function transformRow(row: any): SalesRow {
     agent_avg_paid: parseNumber(row.agent_avg_paid),
     is_above_avg: row.is_above_avg === 'true',
     paid_rank: parseNumber(row.paid_rank),
-    Payment: row.invoice_link || ''
+    Payment: paymentMethod
   };
 }
 
@@ -135,7 +138,6 @@ export const EnhancedDashboard: React.FC = () => {
       percentage: total > 0 ? (value / total) * 100 : 0
     }));
   }, [filteredData]);
-
 
   // Load CSV data on mount
   useEffect(() => {
@@ -215,7 +217,12 @@ export const EnhancedDashboard: React.FC = () => {
     
     Object.entries(filters).forEach(([key, value]) => {
       if (value) {
-        if (key === 'product_type' && value === 'Other') {
+        if (key === 'Customer_Name') {
+          // For customer name, use contains search (typing filter)
+          filtered = filtered.filter((item: SalesRow) => 
+            item.Customer_Name?.toLowerCase().includes(value.toLowerCase())
+          );
+        } else if (key === 'product_type' && value === 'Other') {
           const topProducts = getUniqueValues('product_type', 5).filter(p => p !== 'Other');
           filtered = filtered.filter((item: SalesRow) => 
             !topProducts.includes(item.product_type?.trim() || '')
@@ -278,11 +285,59 @@ export const EnhancedDashboard: React.FC = () => {
   
   const topCloser = topCloserData || { name: 'N/A', amount: 0, deals: 0 };
 
-const topCustomerData = Object.entries(customerStats)
+  // Customer statistics calculation - FIXED
+  const customerStats = filteredData.reduce((acc: Record<string, {amount: number, deals: number, duration: number}>, item: SalesRow) => {
+    const customer = item.Customer_Name?.trim();
+    if (customer && customer !== '') {
+      if (!acc[customer]) {
+        acc[customer] = { amount: 0, deals: 0, duration: 0 };
+      }
+      acc[customer].amount += item.amount_paid;
+      acc[customer].deals += 1;
+      acc[customer].duration += item.duration_months || 0;
+    }
+    return acc;
+  }, {});
+
+  const topCustomerData = Object.entries(customerStats)
     .map(([name, stats]) => ({ name, ...stats }))
     .sort((a, b) => b.amount - a.amount)[0];
   
-  const topCustomer = topCustomerData || { name: 'N/A', amount: 0, deals: 0 };
+  const topCustomer = topCustomerData || { name: 'N/A', amount: 0, deals: 0, duration: 0 };
+
+  // KPI Logic: Show count if multiple records, show name if single record
+  const getKpiDisplay = () => {
+    if (filteredData.length > 1) {
+      return {
+        type: 'count',
+        value: filteredData.length,
+        label: 'Records Found'
+      };
+    } else if (filteredData.length === 1) {
+      return {
+        type: 'name',
+        value: filteredData[0].Customer_Name || 'Unknown',
+        label: 'Customer Name'
+      };
+    } else {
+      return {
+        type: 'none',
+        value: 0,
+        label: 'No Records'
+      };
+    }
+  };
+
+  const kpiDisplay = getKpiDisplay();
+
+  // Advanced Analytics: Top Customer by Duration and Amount
+  const topCustomerByDuration = Object.entries(customerStats)
+    .map(([name, stats]) => ({ name, ...stats }))
+    .sort((a, b) => b.duration - a.duration)[0] || { name: 'N/A', duration: 0, amount: 0, deals: 0 };
+
+  const topCustomerByAmount = Object.entries(customerStats)
+    .map(([name, stats]) => ({ name, ...stats }))
+    .sort((a, b) => b.amount - a.amount)[0] || { name: 'N/A', amount: 0, duration: 0, deals: 0 };
 
   // Enhanced chart data with unique values
   interface AgentPerformance {
@@ -544,7 +599,7 @@ const topCustomerData = Object.entries(customerStats)
       dailyRevenueMap.set(dayKey, (dailyRevenueMap.get(dayKey) || 0) + item.amount_paid);
     });
     const topDay = Array.from(dailyRevenueMap.entries()).sort((a, b) => b[1] - a[1])[0] || ['N/A', 0];
-    const PaymentWay = Array.from(dailyRevenueMap.entries()).sort((a, b) => b[1] - a[1])[0] || ['N/A', 0];     
+    
     return {
       totalRevenue,
       totalDeals,
@@ -556,6 +611,7 @@ const topCustomerData = Object.entries(customerStats)
       revenueGrowthTrend: monthlyRevenueData.length > 1 ? (monthlyRevenueData[monthlyRevenueData.length - 1].amount > monthlyRevenueData[0].amount ? 'Increasing' : 'Decreasing') : 'Stable'
     };
   }, [filteredData, dailyData, weeklyData, monthlyRevenueData]);
+   
 
   // Animation variants
   const cardVariants = {
@@ -645,39 +701,39 @@ const topCustomerData = Object.entries(customerStats)
     }
     return null;
   };
-   const insights = useMemo(() => {
-      const avgDealsByAgent = Object.values(agentStats).map(s => s.deals);
-      const avgAmountByAgent = Object.values(agentStats).map(s => s.amount);
-      
-      // Find best performing day
-      const bestDay = dailyData.reduce((max, day) => day.amount > max.amount ? day : max, dailyData[0] || { amount: 0, formattedDate: 'N/A', deals: 0 });
-      
-      // Calculate growth trends
-      const firstHalf = dailyData.slice(0, Math.floor(dailyData.length / 2));
-      const secondHalf = dailyData.slice(Math.floor(dailyData.length / 2));
-      
-      const firstHalfAvg = firstHalf.reduce((sum, day) => sum + day.amount, 0) / firstHalf.length || 0;
-      const secondHalfAvg = secondHalf.reduce((sum, day) => sum + day.amount, 0) / secondHalf.length || 0;
-      const growthTrend = secondHalfAvg > firstHalfAvg ? 'Increasing' : secondHalfAvg < firstHalfAvg ? 'Decreasing' : 'Stable';
-      const growthPercentage = firstHalfAvg > 0 ? ((secondHalfAvg - firstHalfAvg) / firstHalfAvg * 100) : 0;
-      
-      return {
-        topPerformingMonth: monthlyTrend.reduce((max, month) => month.amount > max.amount ? month : max, monthlyTrend[0] || { month: 'N/A', amount: 0 }),
-        averageDealsPerAgent: avgDealsByAgent.length > 0 ? avgDealsByAgent.reduce((a, b) => a + b, 0) / avgDealsByAgent.length : 0,
-        highestSingleDeal: Math.max(...filteredData.map(d => d.amount_paid)),
-        totalAgents: Object.keys(agentStats).length,
-        totalClosers: Object.keys(closerStats).length,
-        conversionRate: 100, // All deals are closed
-        avgDaysToClose: filteredData.reduce((sum, item) => sum + (item.Customer_Age_Days || 0), 0) / filteredData.length || 0,
-        bestPerformingDay: bestDay,
-        dailyAverage: dailyData.reduce((sum, day) => sum + day.amount, 0) / dailyData.length || 0,
-        totalDays: dailyData.length,
-        growthTrend,
-        growthPercentage: Math.abs(growthPercentage),
-        weeklyAverage: weeklyData.reduce((sum, week) => sum + week.amount, 0) / weeklyData.length || 0
-      };
-    }, [filteredData, agentStats, closerStats, monthlyTrend, dailyData, weeklyData]);
-  
+
+  const insights = useMemo(() => {
+    const avgDealsByAgent = Object.values(agentStats).map(s => s.deals);
+    const avgAmountByAgent = Object.values(agentStats).map(s => s.amount);
+    
+    // Find best performing day
+    const bestDay = dailyData.reduce((max, day) => day.amount > max.amount ? day : max, dailyData[0] || { amount: 0, formattedDate: 'N/A', deals: 0 });
+    
+    // Calculate growth trends
+    const firstHalf = dailyData.slice(0, Math.floor(dailyData.length / 2));
+    const secondHalf = dailyData.slice(Math.floor(dailyData.length / 2));
+    
+    const firstHalfAvg = firstHalf.reduce((sum, day) => sum + day.amount, 0) / firstHalf.length || 0;
+    const secondHalfAvg = secondHalf.reduce((sum, day) => sum + day.amount, 0) / secondHalf.length || 0;
+    const growthTrend = secondHalfAvg > firstHalfAvg ? 'Increasing' : secondHalfAvg < firstHalfAvg ? 'Decreasing' : 'Stable';
+    const growthPercentage = firstHalfAvg > 0 ? ((secondHalfAvg - firstHalfAvg) / firstHalfAvg * 100) : 0;
+    
+    return {
+      topPerformingMonth: monthlyTrend.reduce((max, month) => month.amount > max.amount ? month : max, monthlyTrend[0] || { month: 'N/A', amount: 0 }),
+      averageDealsPerAgent: avgDealsByAgent.length > 0 ? avgDealsByAgent.reduce((a, b) => a + b, 0) / avgDealsByAgent.length : 0,
+      highestSingleDeal: Math.max(...filteredData.map(d => d.amount_paid)),
+      totalAgents: Object.keys(agentStats).length,
+      totalClosers: Object.keys(closerStats).length,
+      conversionRate: 100, // All deals are closed
+      avgDaysToClose: filteredData.reduce((sum, item) => sum + (item.Customer_Age_Days || 0), 0) / filteredData.length || 0,
+      bestPerformingDay: bestDay,
+      dailyAverage: dailyData.reduce((sum, day) => sum + day.amount, 0) / dailyData.length || 0,
+      totalDays: dailyData.length,
+      growthTrend,
+      growthPercentage: Math.abs(growthPercentage),
+      weeklyAverage: weeklyData.reduce((sum, week) => sum + week.amount, 0) / weeklyData.length || 0
+    };
+  }, [filteredData, agentStats, closerStats, monthlyTrend, dailyData, weeklyData]);
 
   return (
     <div className="p-6 space-y-8 bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 min-h-screen">
@@ -705,7 +761,7 @@ const topCustomerData = Object.entries(customerStats)
 
       {/* Dashboard Content */}
       <>
-        {/* Enhanced Filters */}
+        {/* Enhanced Filters with Customer Name Typing */}
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -715,7 +771,7 @@ const topCustomerData = Object.entries(customerStats)
           <div className="flex items-center space-x-3 mb-6">
             <Filter className="w-6 h-6 text-blue-600" />
             <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Smart Filters</h3>
-            <span className="text-sm text-slate-500 dark:text-slate-400">Best way to search </span>
+            <span className="text-sm text-slate-500 dark:text-slate-400">Best way to search</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-7 gap-4">
             {Object.entries(filters).map(([key, value]) => (
@@ -723,22 +779,32 @@ const topCustomerData = Object.entries(customerStats)
                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 capitalize">
                   {key.replace(/([A-Z])/g, ' $1')}
                 </label>
-                <select
-                  value={value}
-                  onChange={(e) => handleFilterChange(key, e.target.value)}
-                  className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                >
-                  <option value="">All {key.replace(/([A-Z])/g, ' $1')}</option>
-                  {filterOptions[key as keyof typeof filterOptions].map((option: string) => (
-                    <option key={option} value={option}>{option}</option>
-                  ))}
-                </select>
+                {key === 'Customer_Name' ? (
+                  <input
+                    type="text"
+                    value={value}
+                    onChange={(e) => handleFilterChange(key, e.target.value)}
+                    placeholder="Type customer name..."
+                    className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  />
+                ) : (
+                  <select
+                    value={value}
+                    onChange={(e) => handleFilterChange(key, e.target.value)}
+                    className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  >
+                    <option value="">All {key.replace(/([A-Z])/g, ' $1')}</option>
+                    {filterOptions[key as keyof typeof filterOptions].map((option: string) => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                )}
               </div>
             ))}
           </div>
         </motion.div>
 
-        {/* Enhanced Animated KPI Cards */}
+        {/* Enhanced Animated KPI Cards with New KPI Logic */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
           {[
             { 
@@ -751,7 +817,6 @@ const topCustomerData = Object.entries(customerStats)
               deals: `${totalDeals} closed deals`,
               gradient: 'from-blue-500 to-blue-600'
             },
-
             { 
               title: 'Closed Deals', 
               value: totalDeals, 
@@ -783,24 +848,24 @@ const topCustomerData = Object.entries(customerStats)
               gradient: 'from-yellow-500 to-amber-600'
             },
             {
-              title:'Top Amount',
-              value: `$${topAmount.toLocaleString()}`,
-              fullValue: `$${topAmount.toLocaleString()}`,
+              title: 'Top Customer Amount',
+              value: topCustomerByAmount.name.length > 10 ? topCustomerByAmount.name.substring(0, 10) + '...' : topCustomerByAmount.name,
+              fullValue: `$${topCustomerByAmount.amount.toLocaleString()} • ${topCustomerByAmount.deals} deals`,
               icon: DollarSign,
-              color: 'green',
-              trend: '+12%',
-              deals: `${topAmount.deals} deals`,
-              gradient: 'from-green-500 to-green-600'
+              color: 'purple',
+              trend: 'Highest',
+              deals: `$${topCustomerByAmount.amount.toLocaleString()}`,
+              gradient: 'from-purple-500 to-purple-600'
             },
             {
-              title:'Customer Name',
-              value: topCustomer.name.length > 10 ? topCustomer.name.substring(0, 10) + '...' : topCustomer.name,
-              fullValue: `$${topCustomer.amount.toLocaleString()} • ${topCustomer.deals} deals`,
-              icon: User,
-              color: 'blue',
-              trend: 'Leader',
-              deals: `${topCustomer.deals} deals`,
-              gradient: 'from-blue-500 to-blue-600'
+              title: 'Top Customer Duration',
+              value: topCustomerByDuration.name.length > 10 ? topCustomerByDuration.name.substring(0, 10) + '...' : topCustomerByDuration.name,
+              fullValue: `${topCustomerByDuration.duration} months • $${topCustomerByDuration.amount.toLocaleString()}`,
+              icon: Clock,
+              color: 'indigo',
+              trend: 'Longest',
+              deals: `${topCustomerByDuration.duration} months`,
+              gradient: 'from-indigo-500 to-indigo-600'
             }
           ].map((metric, index) => (
             <motion.div
@@ -881,12 +946,54 @@ const topCustomerData = Object.entries(customerStats)
           ))}
         </div>
 
+
+        {/* Payment Methods Analysis */}
+        <motion.div
+          variants={chartVariants}
+          initial="hidden"
+          animate="visible"
+          transition={{ delay: 0.6 }}
+          className="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-xl border border-slate-200 dark:border-slate-700"
+        >
+          <div className="flex items-center space-x-3 mb-6">
+            <CreditCard className="w-6 h-6 text-green-600" />
+            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Payment Methods Analysis</h3>
+            <span className="text-sm text-slate-500 dark:text-slate-400">Based on invoice_link processing</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {(() => {
+              const paymentStats: Record<string, { count: number, amount: number }> = {};
+              filteredData.forEach(item => {
+                const payment = item.Payment || 'Unknown';
+                if (!paymentStats[payment]) {
+                  paymentStats[payment] = { count: 0, amount: 0 };
+                }
+                paymentStats[payment].count += 1;
+                paymentStats[payment].amount += item.amount_paid;
+              });
+              
+              return Object.entries(paymentStats)
+                .sort((a, b) => b[1].amount - a[1].amount)
+                .slice(0, 3)
+                .map(([method, stats], index) => (
+                  <div key={method} className="bg-slate-50 dark:bg-slate-700 rounded-xl p-4">
+                    <h4 className="font-semibold text-slate-900 dark:text-white mb-2">
+                      {method === 'paypal' ? '💳 PayPal' : `🔗 ${method}`}
+                    </h4>
+                    <p className="text-2xl font-bold text-green-600">${stats.amount.toLocaleString()}</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">{stats.count} transactions</p>
+                  </div>
+                ));
+            })()}
+          </div>
+        </motion.div>
+
         {/* Revenue Growth Chart */}
         <motion.div
           variants={chartVariants}
           initial="hidden"
           animate="visible"
-          transition={{ delay: 0.5 }}
+          transition={{ delay: 0.7 }}
           className="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-xl border border-slate-200 dark:border-slate-700"
         >
           <div className="flex items-center space-x-3 mb-6">
@@ -934,7 +1041,7 @@ const topCustomerData = Object.entries(customerStats)
           variants={chartVariants}
           initial="hidden"
           animate="visible"
-          transition={{ delay: 0.5 }}
+          transition={{ delay: 0.8 }}
           className="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-xl border border-slate-200 dark:border-slate-700"
         >
           <div className="flex items-center space-x-3 mb-6">
@@ -999,7 +1106,7 @@ const topCustomerData = Object.entries(customerStats)
           variants={chartVariants}
           initial="hidden"
           animate="visible"
-          transition={{ delay: 0.7 }}
+          transition={{ delay: 0.9 }}
           className="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-xl border border-slate-200 dark:border-slate-700"
         >
           <div className="flex items-center space-x-3 mb-6">
@@ -1056,7 +1163,7 @@ const topCustomerData = Object.entries(customerStats)
             variants={chartVariants}
             initial="hidden"
             animate="visible"
-            transition={{ delay: 0.8 }}
+            transition={{ delay: 1.0 }}
             className="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-xl border border-slate-200 dark:border-slate-700"
           >
             <div className="flex items-center space-x-3 mb-6">
@@ -1098,7 +1205,7 @@ const topCustomerData = Object.entries(customerStats)
             variants={chartVariants}
             initial="hidden"
             animate="visible"
-            transition={{ delay: 0.9 }}
+            transition={{ delay: 1.1 }}
             className="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-xl border border-slate-200 dark:border-slate-700"
           >
             <div className="flex items-center space-x-3 mb-6">
@@ -1141,7 +1248,7 @@ const topCustomerData = Object.entries(customerStats)
             variants={chartVariants}
             initial="hidden"
             animate="visible"
-            transition={{ delay: 1.0 }}
+            transition={{ delay: 1.2 }}
             className="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-xl border border-slate-200 dark:border-slate-700"
           >
             <div className="flex items-center space-x-3 mb-6">
@@ -1149,43 +1256,43 @@ const topCustomerData = Object.entries(customerStats)
               <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Top Program Performance</h3>
             </div>
             <div className="flex flex-col md:flex-row md:items-center md:space-x-8">
-  <ResponsiveContainer width={320} height={320}>
-    <PieChart>
-      <Pie
-        data={programStats.slice(0, 5)}
-        dataKey="amount"
-        nameKey="name"
-        cx="50%"
-        cy="50%"
-        outerRadius={110}
-        labelLine={false}
-        label={renderCustomLabel}
-        isAnimationActive={true}
-      >
-        {programStats.slice(0, 5).map((entry, idx) => (
-          <Cell key={`cell-p-${entry.name}`} fill={COLORS[idx % COLORS.length]} />
-        ))}
-      </Pie>
-      <Tooltip formatter={(value: number, name: string) => [`$${value.toLocaleString()}`, name]} />
-      <Legend verticalAlign="bottom" height={36} />
-    </PieChart>
-  </ResponsiveContainer>
-  <div className="flex-1 mt-6 md:mt-0 space-y-2">
-    {programStats.slice(0, 5).map((program, index) => (
-      <div key={program.name} className="flex justify-between items-center bg-slate-50 dark:bg-slate-700 p-2 rounded-xl">
-        <span className="font-semibold text-slate-900 dark:text-white">{index + 1}. {program.name}</span>
-        <span className="text-green-600 font-bold">${program.amount.toLocaleString()} ({program.deals} deals)</span>
-      </div>
-    ))}
-  </div>
-</div>
+              <ResponsiveContainer width={320} height={320}>
+                <PieChart>
+                  <Pie
+                    data={programStats.slice(0, 5)}
+                    dataKey="amount"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={110}
+                    labelLine={false}
+                    label={renderCustomLabel}
+                    isAnimationActive={true}
+                  >
+                    {programStats.slice(0, 5).map((entry, idx) => (
+                      <Cell key={`cell-p-${entry.name}`} fill={COLORS[idx % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value: number, name: string) => [`$${value.toLocaleString()}`, name]} />
+                  <Legend verticalAlign="bottom" height={36} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex-1 mt-6 md:mt-0 space-y-2">
+                {programStats.slice(0, 5).map((program, index) => (
+                  <div key={program.name} className="flex justify-between items-center bg-slate-50 dark:bg-slate-700 p-2 rounded-xl">
+                    <span className="font-semibold text-slate-900 dark:text-white">{index + 1}. {program.name}</span>
+                    <span className="text-green-600 font-bold">${program.amount.toLocaleString()} ({program.deals} deals)</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </motion.div>
 
           <motion.div
             variants={chartVariants}
             initial="hidden"
             animate="visible"
-            transition={{ delay: 1.1 }}
+            transition={{ delay: 1.3 }}
             className="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-xl border border-slate-200 dark:border-slate-700"
           >
             <div className="flex items-center space-x-3 mb-6">
@@ -1193,202 +1300,217 @@ const topCustomerData = Object.entries(customerStats)
               <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Top Service Tier Performance</h3>
             </div>
             <div className="flex flex-col md:flex-row md:items-center md:space-x-8">
-  <ResponsiveContainer width={320} height={320}>
-    <PieChart>
-      <Pie
-        data={serviceTierStats.slice(0, 5)}
-        dataKey="amount"
-        nameKey="name"
-        cx="50%"
-        cy="50%"
-        outerRadius={110}
-        labelLine={false}
-        label={renderCustomLabel}
-        isAnimationActive={true}
-      >
-        {serviceTierStats.slice(0, 5).map((entry, idx) => (
-          <Cell key={`cell-s-${entry.name}`} fill={COLORS[idx % COLORS.length]} />
-        ))}
-      </Pie>
-      <Tooltip formatter={(value: number, name: string) => [`$${value.toLocaleString()}`, name]} />
-      <Legend verticalAlign="bottom" height={36} />
-    </PieChart>
-  </ResponsiveContainer>
-  <div className="flex-1 mt-6 md:mt-0 space-y-2">
-    {serviceTierStats.slice(0, 5).map((tier, index) => (
-      <div key={tier.name} className="flex justify-between items-center bg-slate-50 dark:bg-slate-700 p-2 rounded-xl">
-        <span className="font-semibold text-slate-900 dark:text-white">{index + 1}. {tier.name}</span>
-        <span className="text-green-600 font-bold">${tier.amount.toLocaleString()} ({tier.deals} deals)</span>
-      </div>
-    ))}
-  </div>
-</div>
+              <ResponsiveContainer width={320} height={320}>
+                <PieChart>
+                  <Pie
+                    data={serviceTierStats.slice(0, 5)}
+                    dataKey="amount"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={110}
+                    labelLine={false}
+                    label={renderCustomLabel}
+                    isAnimationActive={true}
+                  >
+                    {serviceTierStats.slice(0, 5).map((entry, idx) => (
+                      <Cell key={`cell-s-${entry.name}`} fill={COLORS[idx % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value: number, name: string) => [`$${value.toLocaleString()}`, name]} />
+                  <Legend verticalAlign="bottom" height={36} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex-1 mt-6 md:mt-0 space-y-2">
+                {serviceTierStats.slice(0, 5).map((tier, index) => (
+                  <div key={tier.name} className="flex justify-between items-center bg-slate-50 dark:bg-slate-700 p-2 rounded-xl">
+                    <span className="font-semibold text-slate-900 dark:text-white">{index + 1}. {tier.name}</span>
+                    <span className="text-green-600 font-bold">${tier.amount.toLocaleString()} ({tier.deals} deals)</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </motion.div>
         </div>
 
-  
-  
-<div className="grid grid-cols-1 gap-8">
+        <div className="grid grid-cols-1 gap-8">
+          {/* Enhanced Deep Insights Panel with Date Analysis */}
+          <motion.div
+            variants={chartVariants}
+            initial="hidden"
+            animate="visible"
+            transition={{ delay: 1.4 }}
+            className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl p-8 text-white shadow-xl"
+          >
+            <div className="flex items-center space-x-3 mb-6">
+              <Eye className="w-6 h-6" />
+              <h3 className="text-2xl font-bold">Enhanced Deep Insights</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-white/10 rounded-xl p-4">
+                <h4 className="font-semibold mb-2">🏆 Top Performing Month</h4>
+                <p className="text-lg">{insights.topPerformingMonth?.month || 'N/A'}</p>
+                <p className="text-sm opacity-80">${insights.topPerformingMonth?.amount.toLocaleString() || '0'}</p>
+              </div>
+              <div className="bg-white/10 rounded-xl p-4">
+                <h4 className="font-semibold mb-2">🎯 Best Performing Day</h4>
+                <p className="text-lg">{insights.bestPerformingDay?.formattedDate || 'N/A'}</p>
+                <p className="text-sm opacity-80">${insights.bestPerformingDay?.amount.toLocaleString() || '0'} • {insights.bestPerformingDay?.deals || 0} deals</p>
+              </div>
+              <div className="bg-white/10 rounded-xl p-4">
+                <h4 className="font-semibold mb-2">📊 Daily Average</h4>
+                <p className="text-lg">${Math.round(insights.dailyAverage).toLocaleString()}</p>
+                <p className="text-sm opacity-80">Over {insights.totalDays} days</p>
+              </div>
+              <div className="bg-white/10 rounded-xl p-4">
+                <h4 className="font-semibold mb-2">📈 Growth Trend</h4>
+                <p className="text-lg">{insights.growthTrend}</p>
+                <p className="text-sm opacity-80">{insights.growthPercentage.toFixed(1)}% change</p>
+              </div>
+              <div className="bg-white/10 rounded-xl p-4">
+                <h4 className="font-semibold mb-2">📅 Weekly Average</h4>
+                <p className="text-lg">${Math.round(insights.weeklyAverage).toLocaleString()}</p>
+                <p className="text-sm opacity-80">Per week</p>
+              </div>
+              <div className="bg-white/10 rounded-xl p-4">
+                <h4 className="font-semibold mb-2">💎 Highest Single Deal</h4>
+                <p className="text-lg">${insights.highestSingleDeal.toLocaleString()}</p>
+              </div>
+              <div className="bg-white/10 rounded-xl p-4">
+                <h4 className="font-semibold mb-2">👥 Total Agents</h4>
+                <p className="text-lg">{insights.totalAgents}</p>
+              </div>
+              <div className="bg-white/10 rounded-xl p-4">
+                <h4 className="font-semibold mb-2">🎯 Total Closers</h4>
+                <p className="text-lg">{insights.totalClosers}</p>
+              </div>
+              <div className="bg-white/10 rounded-xl p-4">
+              <h4 className="font-semibold mb-2">
+                <Clock className="w-5 h-5 mr-2" />
+                Top Customer by Duration
+              </h4>
+              <p className="text-2xl font-bold">{topCustomerByDuration.name}</p>
+              <p className="text-lg opacity-90">{topCustomerByDuration.duration} months</p>
+              <p className="text-sm opacity-75">${topCustomerByDuration.amount.toLocaleString()} total amount</p>
+            </div>
+            <div className="bg-white/10 rounded-xl p-6">
+              <h4 className="text-xl font-semibold mb-4 flex items-center">
+                <DollarSign className="w-5 h-5 mr-2" />
+                Top Customer by Amount
+              </h4>
+              <p className="text-2xl font-bold">{topCustomerByAmount.name}</p>
+              <p className="text-lg opacity-90">${topCustomerByAmount.amount.toLocaleString()}</p>
+              <p className="text-sm opacity-75">{topCustomerByAmount.duration} months duration</p>
+            </div>
+            </div>
+          </motion.div>
+        </div>
+        {/* Top Performers Section with Animation */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.5 }}
+          className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-3xl p-8 text-white relative overflow-hidden"
+        >
+          <div className="relative z-10">
+            <motion.h2 
+              className="text-3xl font-bold mb-8 text-center"
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              🏆 Top Performers Hall of Fame
+            </motion.h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <motion.div 
+                className="text-center"
+                whileHover={{ scale: 1.05 }}
+              >
+                <motion.div
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <Star className="w-12 h-12 mx-auto mb-4 text-yellow-300" />
+                </motion.div>
+                <h3 className="text-xl font-bold mb-2">Top Agent</h3>
+                <p className="text-2xl font-bold">{topAgent.name}</p>
+                <p className="text-lg opacity-90">${topAgent.amount.toLocaleString()}</p>
+                <p className="text-sm opacity-75">{topAgent.deals} deals</p>
+              </motion.div>
+              <motion.div 
+                className="text-center"
+                whileHover={{ scale: 1.05 }}
+              >
+                <motion.div
+                  animate={{ rotate: [0, -10, 10, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+                >
+                  <Crown className="w-12 h-12 mx-auto mb-4 text-yellow-300" />
+                </motion.div>
+                <h3 className="text-xl font-bold mb-2">Top Closer</h3>
+                <p className="text-2xl font-bold">{topCloser.name}</p>
+                <p className="text-lg opacity-90">${topCloser.amount.toLocaleString()}</p>
+                <p className="text-sm opacity-75">{topCloser.deals} deals</p>
+              </motion.div>
+              <motion.div 
+                className="text-center"
+                whileHover={{ scale: 1.05 }}
+              >
+                <motion.div
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity, delay: 1 }}
+                >
+                  <Award className="w-12 h-12 mx-auto mb-4 text-yellow-300" />
+                </motion.div>
+                <h3 className="text-xl font-bold mb-2">Best Program</h3>
+                <p className="text-2xl font-bold">{programData[0]?.name || 'N/A'}</p>
+                <p className="text-lg opacity-90">${programData[0]?.value.toLocaleString() || '0'}</p>
+                <p className="text-sm opacity-75">{programData[0]?.deals || 0} deals</p>
+              </motion.div>
+            </div>
+          </div>
+        </motion.div>
 
-                             {/* Enhanced Deep Insights Panel with Date Analysis */}
-                             <motion.div
-                               variants={chartVariants}
-                               initial="hidden"
-                               animate="visible"
-                               transition={{ delay: 1.3 }}
-                               className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl p-8 text-white shadow-xl"
-                             >
-                               <div className="flex items-center space-x-3 mb-6">
-                                 <Eye className="w-6 h-6" />
-                                 <h3 className="text-2xl font-bold">Enhanced Deep Insights</h3>
-                               </div>
-                               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                 <div className="bg-white/10 rounded-xl p-4">
-                                   <h4 className="font-semibold mb-2">🏆 Top Performing Month</h4>
-                                   <p className="text-lg">{insights.topPerformingMonth?.month || 'N/A'}</p>
-                                   <p className="text-sm opacity-80">${insights.topPerformingMonth?.amount.toLocaleString() || '0'}</p>
-                                 </div>
-                                 <div className="bg-white/10 rounded-xl p-4">
-                                   <h4 className="font-semibold mb-2">🎯 Best Performing Day</h4>
-                                   <p className="text-lg">{insights.bestPerformingDay?.formattedDate || 'N/A'}</p>
-                                   <p className="text-sm opacity-80">${insights.bestPerformingDay?.amount.toLocaleString() || '0'} • {insights.bestPerformingDay?.deals || 0} deals</p>
-                                 </div>
-                                 <div className="bg-white/10 rounded-xl p-4">
-                                   <h4 className="font-semibold mb-2">📊 Daily Average</h4>
-                                   <p className="text-lg">${Math.round(insights.dailyAverage).toLocaleString()}</p>
-                                   <p className="text-sm opacity-80">Over {insights.totalDays} days</p>
-                                 </div>
-                                 <div className="bg-white/10 rounded-xl p-4">
-                                   <h4 className="font-semibold mb-2">📈 Growth Trend</h4>
-                                   <p className="text-lg">{insights.growthTrend}</p>
-                                   <p className="text-sm opacity-80">{insights.growthPercentage.toFixed(1)}% change</p>
-                                 </div>
-                                 <div className="bg-white/10 rounded-xl p-4">
-                                   <h4 className="font-semibold mb-2">📅 Weekly Average</h4>
-                                   <p className="text-lg">${Math.round(insights.weeklyAverage).toLocaleString()}</p>
-                                   <p className="text-sm opacity-80">Per week</p>
-                                 </div>
-                                 <div className="bg-white/10 rounded-xl p-4">
-                                   <h4 className="font-semibold mb-2">💎 Highest Single Deal</h4>
-                                   <p className="text-lg">${insights.highestSingleDeal.toLocaleString()}</p>
-                                 </div>
-                                 <div className="bg-white/10 rounded-xl p-4">
-                                   <h4 className="font-semibold mb-2">💎 Top Customer </h4>
-                                   <p className="text-lg">${insights.topCustomer.toLocaleString()}</p>
-                                   </div>
-                               </div>
-                             </motion.div>
-                           </div>
-                 
-                           {/* Top Performers Section with Animation */}
-                           <motion.div
-                             initial={{ opacity: 0, y: 20 }}
-                             animate={{ opacity: 1, y: 0 }}
-                             transition={{ delay: 1.4 }}
-                             className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-3xl p-8 text-white relative overflow-hidden"
-                           >
-                             {/* Animated background elements */}
-             
-                 
-                             <div className="relative z-10">
-                               <motion.h2 
-                                 className="text-3xl font-bold mb-8 text-center"
-                                 animate={{ scale: [1, 1.05, 1] }}
-                                 transition={{ duration: 2, repeat: Infinity }}
-                               >
-                                 🏆 Top Performers Hall of Fame
-                               </motion.h2>
-                               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                 <motion.div 
-                                   className="text-center"
-                                   whileHover={{ scale: 1.05 }}
-                                 >
-                                   <motion.div
-                                     animate={{ rotate: [0, 10, -10, 0] }}
-                                     transition={{ duration: 2, repeat: Infinity }}
-                                   >
-                                     <Star className="w-12 h-12 mx-auto mb-4 text-yellow-300" />
-                                   </motion.div>
-                                   <h3 className="text-xl font-bold mb-2">Top Agent</h3>
-                                   <p className="text-2xl font-bold">{topAgent.name}</p>
-                                   <p className="text-lg opacity-90">${topAgent.amount.toLocaleString()}</p>
-                                   <p className="text-sm opacity-75">{topAgent.deals} deals</p>
-                                 </motion.div>
-                                 <motion.div 
-                                   className="text-center"
-                                   whileHover={{ scale: 1.05 }}
-                                 >
-                                   <motion.div
-                                     animate={{ rotate: [0, -10, 10, 0] }}
-                                     transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
-                                   >
-                                     <Crown className="w-12 h-12 mx-auto mb-4 text-yellow-300" />
-                                   </motion.div>
-                                   <h3 className="text-xl font-bold mb-2">Top Closer</h3>
-                                   <p className="text-2xl font-bold">{topCloser.name}</p>
-                                   <p className="text-lg opacity-90">${topCloser.amount.toLocaleString()}</p>
-                                   <p className="text-sm opacity-75">{topCloser.deals} deals</p>
-                                 </motion.div>
-                                 <motion.div 
-                                   className="text-center"
-                                   whileHover={{ scale: 1.05 }}
-                                 >
-                                   <motion.div
-                                     animate={{ scale: [1, 1.1, 1] }}
-                                     transition={{ duration: 1.5, repeat: Infinity, delay: 1 }}
-                                   >
-                                     <Award className="w-12 h-12 mx-auto mb-4 text-yellow-300" />
-                                   </motion.div>
-                                   <h3 className="text-xl font-bold mb-2">Best Program</h3>
-                                   <p className="text-2xl font-bold">{programData[0]?.name || 'N/A'}</p>
-                                   <p className="text-lg opacity-90">${programData[0]?.value.toLocaleString() || '0'}</p>
-                                   <p className="text-sm opacity-75">{programData[0]?.deals || 0} deals</p>
-                                 </motion.div>
-                               </div>
-                             </div>
-                           </motion.div>
-                 
-                           {/* Summary Statistics */}
-                           <motion.div
-                             initial={{ opacity: 0 }}
-                             animate={{ opacity: 1 }}
-                             transition={{ delay: 1.5 }}
-                             className="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-xl border border-slate-200 dark:border-slate-700"
-                           >
-                             <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6 text-center">📊 Summary Statistics</h2>
-                             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                               {[
-                                 { label: 'Total Records', value: filteredData.length, icon: BarChart },
-                                 { label: 'Unique Agents', value: new Set(filteredData.map((d: SalesRow) => d.sales_agent?.trim()).filter(Boolean)).size, icon: Users },
-                                 { label: 'Unique Closers', value: new Set(filteredData.map((d: SalesRow) => d.closing_agent?.trim()).filter(Boolean)).size, icon: Users },
-                                 { label: 'Programs', value: new Set(filteredData.map((d: SalesRow) => d.product_type?.trim()).filter(Boolean)).size, icon: Target },
-                                 { label: 'Countries', value: new Set(filteredData.map((d: SalesRow) => d.country?.trim()).filter(Boolean)).size, icon: Activity },
-                                 { label: 'Active Days', value: dailyData.length, icon: Calendar }
-                               ].map((stat, index) => (
-                                 <motion.div
-                                   key={stat.label}
-                                   initial={{ opacity: 0, scale: 0.9 }}
-                                   animate={{ opacity: 1, scale: 1 }}
-                                   whileHover={{ scale: 1.05 }}
-                                   transition={{ delay: 1.6 + index * 0.1 }}
-                                   className="text-center p-4 bg-slate-50 dark:bg-slate-700 rounded-2xl hover:shadow-lg transition-all duration-200"
-                                 >
-                                   <motion.div
-                                     animate={{ rotate: [0, 360] }}
-                                     transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                                   >
-                                     <stat.icon className="w-8 h-8 mx-auto mb-2 text-blue-600 dark:text-blue-400" />
-                                   </motion.div>
-                                   <p className="text-2xl font-bold text-slate-900 dark:text-white">{stat.value}</p>
-                                   <p className="text-sm text-slate-600 dark:text-slate-400">{stat.label}</p>
-                                 </motion.div>
-                               ))}
-                             </div>
-                           </motion.div>  
-        
+        {/* Summary Statistics */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.6 }}
+          className="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-xl border border-slate-200 dark:border-slate-700"
+        >
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6 text-center">📊 Summary Statistics</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+            {[
+              { label: 'Total Records', value: filteredData.length, icon: BarChart },
+              { label: 'Unique Agents', value: new Set(filteredData.map((d: SalesRow) => d.sales_agent?.trim()).filter(Boolean)).size, icon: Users },
+              { label: 'Unique Closers', value: new Set(filteredData.map((d: SalesRow) => d.closing_agent?.trim()).filter(Boolean)).size, icon: Users },
+              { label: 'Programs', value: new Set(filteredData.map((d: SalesRow) => d.product_type?.trim()).filter(Boolean)).size, icon: Target },
+              { label: 'Countries', value: new Set(filteredData.map((d: SalesRow) => d.country?.trim()).filter(Boolean)).size, icon: Activity },
+              { label: 'Active Days', value: dailyData.length, icon: Calendar }
+            ].map((stat, index) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                whileHover={{ scale: 1.05 }}
+                transition={{ delay: 1.7 + index * 0.1 }}
+                className="text-center p-4 bg-slate-50 dark:bg-slate-700 rounded-2xl hover:shadow-lg transition-all duration-200"
+              >
+                <motion.div
+                  animate={{ rotate: [0, 360] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                >
+                  <stat.icon className="w-8 h-8 mx-auto mb-2 text-blue-600 dark:text-blue-400" />
+                </motion.div>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{stat.value}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">{stat.label}</p>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>  
       </>
     </div>
   );
 };
 
 export default EnhancedDashboard;
+
