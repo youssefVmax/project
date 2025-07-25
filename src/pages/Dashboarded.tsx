@@ -40,7 +40,7 @@ import {
 } from "lucide-react"
 
 const CSV_URL =
-"public/data/Three-month-dashboard-R.csv"
+"/public/data/Three-month-dashboard-R.csv"
 
 function parseNumber(val: string | number): number {
   const num = Number(val)
