@@ -39,7 +39,7 @@ import {
   CreditCard,
 } from "lucide-react"
 
-const CSV_PATH = '/data/Three-month-dashboard-R.csv';
+const CSV_PATH = 'public/data/Three-month-dashboard-R.csv';
 
 function parseNumber(val: string | number): number {
   const num = Number(val)
