@@ -40,7 +40,7 @@ import {
 } from "lucide-react"
 
 const CSV_URL =
-  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Three-month-dashboard-R-ZzJuCFvor9znUUnG21a7u5iGTovYL8.csv"
+"public/data/Three-month-dashboard-R.csv"
 
 function parseNumber(val: string | number): number {
   const num = Number(val)
@@ -58,7 +58,6 @@ interface SalesRow {
   paid_per_month: number
   duration_months: number
   days_used_estimated: number
-  customer_age_days: number
   sales_agent: string
   closing_agent: string
   sales_team: string
@@ -79,6 +78,7 @@ interface SalesRow {
   is_above_avg: boolean
   paid_rank: number
   Payment: string
+  end_year: string
 }
 
 function transformRow(row: any): SalesRow {
@@ -97,7 +97,6 @@ function transformRow(row: any): SalesRow {
     paid_per_month: parseNumber(row.paid_per_month),
     duration_months: parseNumber(row.duration_months),
     days_used_estimated: parseNumber(row.days_used_estimated),
-    customer_age_days: parseNumber(row.customer_age_days),
     sales_agent: row.sales_agent || "",
     closing_agent: row.closing_agent || "",
     sales_team: row.sales_team || "",
@@ -118,7 +117,8 @@ function transformRow(row: any): SalesRow {
     is_above_avg: row.is_above_avg === "TRUE",
     paid_rank: parseNumber(row.paid_rank),
     Payment: paymentMethod,
-  }
+    end_year: row.end_year || "",
+      }
 }
 
 const COLORS = [
@@ -166,6 +166,7 @@ export default function EnhancedDashboard() {
     country: "",
     Payment: "",
     duration_months: "",
+    end_year: "",
   })
 
   // Load CSV data from URL
@@ -315,6 +316,7 @@ export default function EnhancedDashboard() {
     country: getUniqueValues("country"),
     Payment: ["PayPal", "Website"], // Fixed payment options
     duration_months: getUniqueValues("duration_months"),
+    end_year: getUniqueValues("end_year"),
   }
 
   // Apply filters
