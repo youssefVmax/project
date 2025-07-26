@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { motion } from "framer-motion"
-import Papa from "papaparse"
+import * as XLSX from "xlsx";
 import {
   BarChart,
   Bar,
@@ -38,8 +38,11 @@ import {
   Clock,
   CreditCard,
 } from "lucide-react"
+import Papa from "papaparse";
 
 const CSV_PATH = '../public/data/Three-month-dashboard-R.csv';
+
+
 
 function parseNumber(val: string | number): number {
   const num = Number(val)
@@ -168,10 +171,10 @@ export default function EnhancedDashboard() {
     end_year: "",
   })
 
-  // Load CSV data from URL
+// Load CSV data from URL
   useEffect(() => {
     setLoading(true)
-    fetch(CSV_URL)
+    fetch(CSV_PATH)
       .then((response) => response.text())
       .then((csvText) => {
         Papa.parse(csvText, {
