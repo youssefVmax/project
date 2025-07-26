@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect, useMemo, useRef } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { motion } from "framer-motion"
-import * as XLSX from "xlsx";
+import Papa from "papaparse"
 import {
   BarChart,
   Bar,
@@ -38,10 +38,14 @@ import {
   Clock,
   CreditCard,
 } from "lucide-react"
-import Papa from "papaparse"; 
-import { dataStore } from "../utils/dataStore";
 
-const CSV_PATH = '../public/data/Three-month-dashboard-R.csv'; 
+const CSV_URL =
+"public/data/Three-month-dashboard-R.csv"
+
+function parseNumber(val: string | number): number {
+  const num = Number(val)
+  return isNaN(num) ? 0 : num
+}
 
 interface SalesRow {
   signup_date: string
@@ -89,10 +93,10 @@ function transformRow(row: any): SalesRow {
     email: row.email || "",
     phone_Number: row["phone Number"] || "",
     country: row.country || "",
-    amount_paid: parseFloat(row.amount_paid),
-    paid_per_month: parseFloat(row.paid_per_month),
-    duration_months: parseFloat(row.duration_months),
-    days_used_estimated: parseFloat(row.days_used_estimated),
+    amount_paid: parseNumber(row.amount_paid),
+    paid_per_month: parseNumber(row.paid_per_month),
+    duration_months: parseNumber(row.duration_months),
+    days_used_estimated: parseNumber(row.days_used_estimated),
     sales_agent: row.sales_agent || "",
     closing_agent: row.closing_agent || "",
     sales_team: row.sales_team || "",
@@ -106,12 +110,12 @@ function transformRow(row: any): SalesRow {
     is_bob_player: row.is_bob_player === "TRUE",
     is_smarters: row.is_smarters === "TRUE",
     is_ibo_pro: row.is_ibo_pro === "TRUE",
-    days_remaining: parseFloat(row.days_remaining),
-    paid_per_day: parseFloat(row.paid_per_day),
-    duration_mean_paid: parseFloat(row.duration_mean_paid),
-    agent_avg_paid: parseFloat(row.agent_avg_paid),
+    days_remaining: parseNumber(row.days_remaining),
+    paid_per_day: parseNumber(row.paid_per_day),
+    duration_mean_paid: parseNumber(row.duration_mean_paid),
+    agent_avg_paid: parseNumber(row.agent_avg_paid),
     is_above_avg: row.is_above_avg === "TRUE",
-    paid_rank: parseFloat(row.paid_rank),
+    paid_rank: parseNumber(row.paid_rank),
     Payment: paymentMethod,
     end_year: row.end_year || "",
       }
@@ -147,9 +151,9 @@ const MONTH_ORDER = [
 ]
 
 export default function EnhancedDashboard() {
-  const [realTimeEntries, setRealTimeEntries] = useState<any[]>([]);
   const [salesData, setSalesData] = useState<SalesRow[]>([])
   const [filteredData, setFilteredData] = useState<SalesRow[]>([])
+  const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({
     Customer_Name: "",
     amount_paid: "",
@@ -165,17 +169,48 @@ export default function EnhancedDashboard() {
     end_year: "",
   })
 
- 
-  // Subscribe to real-time data updates
+  // Load CSV data from URL
   useEffect(() => {
-    const unsubscribe = dataStore.subscribe(() => {
-      setRealTimeEntries(dataStore.getEntries());
-    });
-    
-    setRealTimeEntries(dataStore.getEntries());
-    return unsubscribe;
-  }, []);
+    setLoading(true)
+    fetch(CSV_URL)
+      .then((response) => response.text())
+      .then((csvText) => {
+        Papa.parse(csvText, {
+          header: true,
+          skipEmptyLines: true,
+          complete: (results: Papa.ParseResult<any>) => {
+            const rows: SalesRow[] = results.data
+              .map((row: any) => transformRow(row))
+              .filter((row: SalesRow) => row.sales_agent && row.amount_paid > 0)
 
+            console.log("Loaded data sample:", rows.slice(0, 3))
+            console.log("Total rows:", rows.length)
+
+            setSalesData(rows)
+            setFilteredData(rows)
+            setLoading(false)
+
+            console.log("Sample agent stats:", Object.entries(agentStats).slice(0, 3))
+            console.log("Sample closer stats:", Object.entries(closerStats).slice(0, 3))
+            console.log("Sample country stats:", countryStats.slice(0, 3))
+            console.log("Sample sales team stats:", salesTeamStats.slice(0, 3))
+            console.log("Monthly revenue data:", monthlyRevenueData.slice(0, 3))
+          },
+          error: (error: any) => {
+            console.error("CSV parsing error:", error)
+            setSalesData([])
+            setFilteredData([])
+            setLoading(false)
+          },
+        })
+      })
+      .catch((error) => {
+        console.error("Fetch error:", error)
+        setSalesData([])
+        setFilteredData([])
+        setLoading(false)
+      })
+  }, [])
 
   // Compute paymentData for Payment Methods PieChart
   const paymentData = useMemo(() => {
@@ -243,7 +278,7 @@ export default function EnhancedDashboard() {
       .sort((a, b) => b.value - a.value)
   }, [filteredData])
 
-  // Memoized unique values for dropdowns
+  // Get unique values for dropdown options with proper month ordering
   const getUniqueValues = (field: keyof SalesRow): string[] => {
     if (!salesData || salesData.length === 0) return []
 
@@ -269,8 +304,7 @@ export default function EnhancedDashboard() {
     return values
   }
 
-  // Memoize filterOptions to avoid recomputation
-  const filterOptions = useMemo(() => ({
+  const filterOptions = {
     Customer_Name: getUniqueValues("Customer_Name"),
     amount_paid: getUniqueValues("amount_paid"),
     sales_agent: getUniqueValues("sales_agent"),
@@ -283,7 +317,7 @@ export default function EnhancedDashboard() {
     Payment: ["PayPal", "Website"], // Fixed payment options
     duration_months: getUniqueValues("duration_months"),
     end_year: getUniqueValues("end_year"),
-  }), [salesData])
+  }
 
   // Apply filters
   useEffect(() => {
@@ -795,6 +829,21 @@ export default function EnhancedDashboard() {
       )
     }
     return null
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
+        <div className="text-center">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+            className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"
+          />
+          <p className="text-xl font-semibold text-slate-700 dark:text-slate-300">Loading Dashboard...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
