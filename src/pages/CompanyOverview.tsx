@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Users, Award, TrendingUp, Tv, Satellite, Globe, Shield, Building2, BarChart, Radio, Server, Monitor, Film, Headphones, Activity, BookOpen, User, Briefcase, Star, MessageCircle, Phone, Mail, MapPin, Trophy, Diamond, Sparkles } from "lucide-react";
+import { Users, Award, TrendingUp, Tv, Satellite, Globe, Shield, Building2, BarChart, Radio, Server, Monitor, Film, Headphones, Activity, BookOpen, User, Briefcase, Star, MessageCircle, Phone, Mail, MapPin, Trophy, Diamond, Sparkles, Crown } from "lucide-react";
 
 export const CompanyOverview: React.FC = () => {
   const services = [
@@ -227,6 +227,128 @@ export const CompanyOverview: React.FC = () => {
                 }`}
               >
                 Learn More
+              </motion.a>
+            </motion.div>
+          ))}
+        </div>
+      </motion.div>
+            {/* Our Brands & Services Section */}
+            <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.4 }}
+        className="mb-16"
+      >
+        <h2 className="text-3xl font-bold text-slate-900 dark:text-white text-center mb-8">
+          Our Premium Service Tiers
+        </h2>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {[
+            {
+              name: "Gold Tier",
+              description: "Exclusive VIP experience with premium features",
+              features: [
+                "4K Ultra HD Streaming", 
+                "All Sports & PPV Events", 
+                "Multi-Device (5 Devices)",
+                "24/7 Dedicated Support",
+                "Advanced DVR Functionality"
+              ],
+              link: "#",
+              color: "gold",
+              icon: <Crown className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
+            },
+            {
+              name: "Silver Tier",
+              description: "Enhanced experience with premium channels",
+              features: [
+                "Full HD Streaming Quality", 
+                "All Entertainment Channels", 
+                "Multi-Device (3 Devices)",
+                "Priority Support",
+                "Basic DVR Functionality"
+              ],
+              link: "#",
+              color: "silver",
+              icon: <Award className="w-8 h-8 text-gray-400 dark:text-gray-300" />
+            },
+            {
+              name: "Premium Tier",
+              description: "Premium experience at an affordable price",
+              features: [
+                "HD Streaming Quality", 
+                "Popular Sports & Entertainment", 
+                "Multi-Device (2 Devices)",
+                "Standard Support",
+                "On-Demand Content"
+              ],
+              link: "#",
+              color: "blue",
+              icon: <Star className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            }
+          ].map((service, index) => (
+            <motion.div
+              key={service.name}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 + index * 0.2 }}
+              className="bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300 flex flex-col h-full relative overflow-hidden"
+            >
+              {/* Tier badge */}
+              <div className={`absolute top-0 right-0 px-6 py-1 font-bold text-white ${
+                service.color === 'gold' 
+                  ? 'bg-gradient-to-r from-yellow-500 to-yellow-600' 
+                  : service.color === 'silver'
+                    ? 'bg-gradient-to-r from-gray-400 to-gray-600'
+                    : 'bg-gradient-to-r from-blue-500 to-blue-600'
+              } rounded-bl-lg`}>
+                {service.name.split(' ')[0]}
+              </div>
+              
+              <div className="flex items-center space-x-4 mb-6">
+                <div className={`w-16 h-16 rounded-2xl ${
+                  service.color === 'gold' 
+                    ? 'bg-yellow-100 dark:bg-yellow-900/30' 
+                    : service.color === 'silver'
+                      ? 'bg-gray-100 dark:bg-gray-900/30'
+                      : 'bg-blue-100 dark:bg-blue-900/30'
+                } flex items-center justify-center`}>
+                  {service.icon}
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{service.name}</h3>
+                  <p className="text-slate-600 dark:text-slate-400">{service.description}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-3 mb-6 flex-grow">
+                {service.features.map((feature, featureIndex) => (
+                  <div key={featureIndex} className="flex items-center space-x-3">
+                    <div className={`w-2 h-2 rounded-full ${
+                      service.color === 'gold' 
+                        ? 'bg-yellow-500' 
+                        : service.color === 'silver'
+                          ? 'bg-gray-400'
+                          : 'bg-blue-500'
+                    }`}></div>
+                    <span className="text-slate-700 dark:text-slate-300">{feature}</span>
+                  </div>
+                ))}
+              </div>
+              
+              <motion.a
+                href={service.link}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`mt-auto px-4 py-3 rounded-lg font-bold text-center ${
+                  service.color === 'gold' 
+                    ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white' 
+                    : service.color === 'silver'
+                      ? 'bg-gradient-to-r from-gray-500 to-gray-700 text-white'
+                      : 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'
+                }`}
+              >
+                Get {service.name.split(' ')[0]}
               </motion.a>
             </motion.div>
           ))}
