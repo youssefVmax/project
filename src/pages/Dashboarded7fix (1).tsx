@@ -1083,50 +1083,6 @@ export default function EnhancedDashboard() {
         ))}
       </div>
 
-      {/* Revenue Growth Chart */}
-      <motion.div
-        variants={chartVariants}
-        initial="hidden"
-        animate="visible"
-        transition={{ delay: 0.7 }}
-        className="bg-white dark:bg-slate-800 rounded-3xl p-8 shadow-xl border border-slate-200 dark:border-slate-700"
-      >
-        <div className="flex items-center space-x-3 mb-6">
-          <TrendingUp className="w-6 h-6 text-green-600" />
-          <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Monthly Revenue Growth</h3>
-          <span className="text-sm text-slate-500 dark:text-slate-400">Month-over-Month Percentage Change</span>
-        </div>
-        <ResponsiveContainer width="100%" height={400}>
-          <ComposedChart data={monthlyRevenueData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-            <XAxis dataKey="month" stroke="#6B7280" fontSize={12} />
-            <YAxis yAxisId="left" stroke="#6B7280" />
-            <YAxis yAxisId="right" orientation="right" stroke="#6B7280" />
-            <Tooltip
-              formatter={(value: number, name: string) =>
-                name === "revenueGrowth" ? `${value}%` : `$${value.toLocaleString()}`
-              }
-              contentStyle={{
-                backgroundColor: "#1F2937",
-                border: "none",
-                borderRadius: "12px",
-                color: "#F9FAFB",
-                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
-              }}
-            />
-            <Legend />
-            <Bar yAxisId="left" dataKey="amount" fill="#8B5CF6" radius={[4, 4, 0, 0]} name="Monthly Revenue ($)" />
-            <Line
-              yAxisId="right"
-              type="monotone"
-              dataKey="revenueGrowth"
-              stroke="#10B981"
-              strokeWidth={3}
-              name="Revenue Growth (%)"
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </motion.div>
 
       {/* Enhanced Daily Revenue Analysis */}
       <motion.div

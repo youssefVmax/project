@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Users, Award, TrendingUp, Tv, Satellite, Globe, Shield, Building2, BarChart, Radio, Server, Monitor, Film, Headphones, Activity, BookOpen, User, Briefcase, Star, MessageCircle, Phone, Mail, MapPin } from "lucide-react";
+import { Users, Award, TrendingUp, Tv, Satellite, Globe, Shield, Building2, BarChart, Radio, Server, Monitor, Film, Headphones, Activity, BookOpen, User, Briefcase, Star, MessageCircle, Phone, Mail, MapPin, Trophy, Diamond, Sparkles } from "lucide-react";
 
 export const CompanyOverview: React.FC = () => {
   const services = [
@@ -20,14 +20,8 @@ export const CompanyOverview: React.FC = () => {
       color: 'purple',
       link: 'https://skylivellc.us/'
     },
-    {
-      name: 'Enterprise Solutions',
-      description: 'Custom IPTV solutions for businesses and organizations',
-      features: ['Custom Channel Lineups', 'Branded Applications', 'Hotel TV Systems', 'Corporate Communications', 'Digital Signage', 'API Integration'],
-      icon: <Server className="w-8 h-8 text-green-600" />,
-      color: 'green',
-      link: '#enterprise'
-    }
+
+
   ];
 
   const stats = [
@@ -131,31 +125,9 @@ export const CompanyOverview: React.FC = () => {
         </motion.div>
       </motion.div>
 
-      {/* Company Stats */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-16"
-      >
-        {stats.map((stat, index) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 + index * 0.1 }}
-            className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300 hover:scale-105"
-          >
-            <div className={`w-16 h-16 mx-auto mb-4 rounded-full bg-${stat.color}-100 dark:bg-${stat.color}-900/30 flex items-center justify-center`}>
-              <stat.icon className={`w-8 h-8 text-${stat.color}-600 dark:text-${stat.color}-400`} />
-            </div>
-            <h3 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">{stat.value}</h3>
-            <p className="text-slate-600 dark:text-slate-400">{stat.label}</p>
-          </motion.div>
-        ))}
-      </motion.div>
 
       {/* Services */}
+      {/* Our Brands & Services Section */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -166,6 +138,111 @@ export const CompanyOverview: React.FC = () => {
           Our Brands & Services
         </h2>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {[
+            {
+              name: "IBO Player",
+              description: "Premium IPTV service for sports enthusiasts",
+              features: [
+                "Live Sports Channels", 
+                "4K Quality Streaming", 
+                "Multi-Device Support"
+              ],
+              link: "#",
+              color: "blue",
+              icon: <Trophy className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            },
+            {
+              name: "IBO Pro",
+              description: "Professional streaming solutions for businesses",
+              features: [
+                "Enterprise-grade reliability",
+                "Custom channel packages",
+                "24/7 Technical Support"
+              ],
+              link: "#",
+              color: "purple",
+              icon: <Diamond className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+            },
+            {
+              name: "Smarters TV",
+              description: "User-friendly streaming experience for all",
+              features: [
+                "Intuitive interface",
+                "Multi-language support",
+                "Parental controls"
+              ],
+              link: "#",
+              color: "green",
+              icon: <Sparkles className="w-8 h-8 text-green-600 dark:text-green-400" />
+            }
+          ].map((service, index) => (
+            <motion.div
+              key={service.name}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 + index * 0.2 }}
+              className="bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300 flex flex-col h-full"
+            >
+              <div className="flex items-center space-x-4 mb-6">
+                <div className={`w-16 h-16 rounded-2xl ${
+                  service.color === 'blue' 
+                    ? 'bg-blue-100 dark:bg-blue-900/30' 
+                    : service.color === 'purple'
+                      ? 'bg-purple-100 dark:bg-purple-900/30'
+                      : 'bg-green-100 dark:bg-green-900/30'
+                } flex items-center justify-center`}>
+                  {service.icon}
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{service.name}</h3>
+                  <p className="text-slate-600 dark:text-slate-400">{service.description}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-3 mb-6 flex-grow">
+                {service.features.map((feature, featureIndex) => (
+                  <div key={featureIndex} className="flex items-center space-x-3">
+                    <div className={`w-2 h-2 rounded-full ${
+                      service.color === 'blue' 
+                        ? 'bg-blue-500' 
+                        : service.color === 'purple'
+                          ? 'bg-purple-500'
+                          : 'bg-green-500'
+                    }`}></div>
+                    <span className="text-slate-700 dark:text-slate-300">{feature}</span>
+                  </div>
+                ))}
+              </div>
+              
+              <motion.a
+                href={service.link}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`mt-auto px-4 py-2 rounded-lg font-medium text-center ${
+                  service.color === 'blue' 
+                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white' 
+                    : service.color === 'purple'
+                      ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white'
+                      : 'bg-gradient-to-r from-green-600 to-green-700 text-white'
+                }`}
+              >
+                Learn More
+              </motion.a>
+            </motion.div>
+          ))}
+        </div>
+      </motion.div>
+      
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.4 }}
+        className="mb-16"
+      >
+        <h2 className="text-3xl font-bold text-slate-900 dark:text-white text-center mb-8">
+          Our Companies 
+        </h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {services.map((service, index) => (
             <motion.div
               key={service.name}
@@ -205,7 +282,6 @@ export const CompanyOverview: React.FC = () => {
           ))}
         </div>
       </motion.div>
-
       {/* Technology Stack */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -238,68 +314,6 @@ export const CompanyOverview: React.FC = () => {
         </div>
       </motion.div>
 
-      {/* Achievements */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.8 }}
-        className="bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-lg border border-slate-200 dark:border-slate-700 mb-16"
-      >
-        <h2 className="text-3xl font-bold text-slate-900 dark:text-white text-center mb-8">
-          Our Achievements
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {achievements.map((achievement, index) => (
-            <motion.div
-              key={achievement}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.9 + index * 0.1 }}
-              className="flex items-start space-x-3 p-4 bg-slate-50 dark:bg-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
-            >
-              <Award className="w-6 h-6 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-1" />
-              <p className="text-slate-700 dark:text-slate-300">{achievement}</p>
-            </motion.div>
-          ))}
-        </div>
-      </motion.div>
-
-      {/* Content Offerings */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1.0 }}
-        className="mb-16"
-      >
-        <h2 className="text-3xl font-bold text-slate-900 dark:text-white text-center mb-8">
-          Content Library
-        </h2>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[
-            { name: 'Live Sports', icon: Activity, count: '500+ Channels', description: 'All major leagues and events worldwide' },
-            { name: 'Movies', icon: Film, count: '50,000+ Titles', description: 'New releases and classic films' },
-            { name: 'TV Series', icon: Tv, count: '15,000+ Shows', description: 'Complete seasons and box sets' },
-            { name: 'News Channels', icon: Radio, count: '300+ Global', description: '24/7 news coverage from every continent' }
-          ].map((item, index) => (
-            <motion.div
-              key={item.name}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 1.1 + index * 0.1 }}
-              className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-lg border border-slate-200 dark:border-slate-700 text-center flex flex-col h-full"
-            >
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <item.icon className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{item.name}</h3>
-              <p className="text-2xl text-slate-800 dark:text-slate-200 font-bold mb-3">{item.count}</p>
-              <p className="text-slate-600 dark:text-slate-400 mt-auto">{item.description}</p>
-            </motion.div>
-          ))}
-        </div>
-      </motion.div>
-      
       {/* Leadership */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -426,7 +440,7 @@ export const CompanyOverview: React.FC = () => {
           <div className="flex flex-col sm:flex-row justify-center gap-6 text-slate-600 dark:text-slate-400">
             <div className="flex items-center">
               <Phone className="w-5 h-5 mr-2" />
-              <span>+1 (718) 555-0199</span>
+              <span>  </span>
             </div>
             <div className="flex items-center">
               <Mail className="w-5 h-5 mr-2" />
