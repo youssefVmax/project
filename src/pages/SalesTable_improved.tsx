@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import Papa from 'papaparse';
 import { Table, Search, Download, Filter, Eye } from 'lucide-react';
 
-const CSV_PATH = '/data/Three-month-dashboard-R.csv';
+const CSV_PATH =  '/data/3,4,5,6,7-monthes.csv' ;
 
 interface SalesRow {
   id: number;
@@ -45,6 +45,29 @@ export const SalesTable: React.FC = () => {
     }
     
     return new Date(dateStr);
+  };
+
+  // Helper function to get month order for chronological sorting
+  const getMonthOrder = (monthStr: string): number => {
+    if (!monthStr) return 0;
+    
+    const monthMap: { [key: string]: number } = {
+      'january': 1, 'jan': 1, '01': 1, '1': 1,
+      'february': 2, 'feb': 2, '02': 2, '2': 2,
+      'march': 3, 'mar': 3, '03': 3, '3': 3,
+      'april': 4, 'apr': 4, '04': 4, '4': 4,
+      'may': 5, '05': 5, '5': 5,
+      'june': 6, 'jun': 6, '06': 6, '6': 6,
+      'july': 7, 'jul': 7, '07': 7, '7': 7,
+      'august': 8, 'aug': 8, '08': 8, '8': 8,
+      'september': 9, 'sep': 9, 'sept': 9, '09': 9, '9': 9,
+      'october': 10, 'oct': 10, '10': 10,
+      'november': 11, 'nov': 11, '11': 11,
+      'december': 12, 'dec': 12, '12': 12
+    };
+    
+    const lowerMonth = monthStr.toLowerCase().trim();
+    return monthMap[lowerMonth] || 999; // Put unknown months at the end
   };
 
   // Load CSV data
@@ -130,13 +153,17 @@ export const SalesTable: React.FC = () => {
     .sort((a: SalesRow, b: SalesRow) => {
       let aValue: any, bValue: any;
       
-      // Handle date sorting specially
+      // Handle special sorting cases
       if (sortField === 'startDate') {
         aValue = a.startDateParsed.getTime();
         bValue = b.startDateParsed.getTime();
       } else if (sortField === 'endDate') {
         aValue = a.endDateParsed.getTime();
         bValue = b.endDateParsed.getTime();
+      } else if (sortField === 'month') {
+        // Sort months chronologically instead of alphabetically
+        aValue = getMonthOrder(a.month);
+        bValue = getMonthOrder(b.month);
       } else {
         aValue = a[sortField as keyof SalesRow];
         bValue = b[sortField as keyof SalesRow];
