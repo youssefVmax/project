@@ -870,6 +870,5 @@ signup_date,end_date,Customer_Name,email,phone_number,country,amount_paid,paid_p
 29/07/2025,29/01/2028,Taoufik Mdarhri Alaoui,Bluedesir@hotmail.com,15615121810,USA,159,5.3,30,Mohamed Hossam,Sherif Ashraf,MOHAMED TEAM,SMARTERS,SILVER,July,2025,Website 159,FALSE,FALSE,TRUE,FALSE,918,0.173960613,159,159,FALSE,2,2028
 29/07/2025,29/09/2026,Marwan Rachid,Rachimarwan1963@gmal.com,19172920732,USA,180,12.85714286,14,Marwan Khaled,Saif Mohamed,MOHAMED TEAM,IBO PLAYER,SILVER,July,2025,website 180,TRUE,FALSE,FALSE,FALSE,431,0.421545667,123,180,FALSE,1,2026
 30/07/2025,30/09/2027,Abdullah Kamal,jibri008@gmail.com,16125594578,USA,149,5.730769231,26,Ahmed Atef,Ahmed Atef,CS TEAM,IBO PLAYER,SILVER,July,2025,Website - 70v,TRUE,FALSE,FALSE,FALSE,797,0.188131313,149,149,FALSE,3,2027
-,,,,,,,,,,,,,,,,,,,,,,,,,,,
-,,,,,,,,,,,,,,,,,,,,,,,,,,,
-,,,,,,,,,,,,,,,,,,,,,,,,,,,
+30/7/2025,30/7/2026,Mohamed Mohamed,mlemine097@icloud.com,17177067218,USA,60,5,12,Khaled tarek,Saif Mohamed,YOUSEF TEAM,SMARTERS,SILVER,July,2025,Website 60,FALSE,FALSE,TRUE,FALSE,370,0.164383562,60,60,FALSE,2,2026
+30/7/2025,30/9/2026,Waleed Ali,Walghizi@yahoo.com,17734411439,USA,80,5.714285714,14,Ahmed Helmy,Ali Ashraf,YOUSEF TEAM,BOB PLAYER,SILVER,July,2025,Website 80,FALSE,TRUE,FALSE,FALSE,432,0.18735363,80,80,FALSE,1,2026
