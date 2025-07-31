@@ -105,7 +105,7 @@ const EnhancedCustomerPrediction: React.FC = () => {
   useEffect(() => {
     const loadHistoricalData = async () => {
       try {
-        const response = await fetch('/data/Three-month-dashboard-R.csv');
+        const response = await fetch('/data/3,4,5,6,7-monthes.csv');
         const csvText = await response.text();
         
         Papa.parse(csvText, {
