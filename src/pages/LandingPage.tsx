@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { 
@@ -11,10 +11,10 @@ import {
   Zap
 } from 'lucide-react';
 
-const LandingPage: React.FC = () => {
+const LandingPage: React.FC = React.memo(() => {
   const navigate = useNavigate();
 
-  const features = [
+  const features = useMemo(() => [
     {
       icon: <BarChart3 className="w-8 h-8" />,
       title: "Advanced Analytics",
@@ -45,26 +45,38 @@ const LandingPage: React.FC = () => {
       title: "Real-time Updates",
       description: "Live data synchronization and instant notifications"
     }
-  ];
+  ], []);
+
+  const stars = useMemo(() => 
+    [...Array(25)].map((_, i) => (
+      <Star key={i} delay={i * 0.2} />
+    )), []
+  );
+
+  const shootingStars = useMemo(() => 
+    [...Array(2)].map((_, i) => (
+      <ShootingStar key={i} delay={i * 3} />
+    )), []
+  );
+
+  const floatingRocks = useMemo(() => 
+    [...Array(4)].map((_, i) => (
+      <Rock key={i} delay={i * 1} />
+    )), []
+  );
 
   return (
     <FullPageContainer>
       <SpaceBackground>
         <Moon />
         <Stars>
-          {[...Array(50)].map((_, i) => (
-            <Star key={i} delay={i * 0.1} />
-          ))}
+          {stars}
         </Stars>
         <ShootingStars>
-          {[...Array(3)].map((_, i) => (
-            <ShootingStar key={i} delay={i * 2} />
-          ))}
+          {shootingStars}
         </ShootingStars>
         <FloatingRocks>
-          {[...Array(8)].map((_, i) => (
-            <Rock key={i} delay={i * 0.5} />
-          ))}
+          {floatingRocks}
         </FloatingRocks>
       </SpaceBackground>
 
@@ -123,7 +135,9 @@ const LandingPage: React.FC = () => {
       </FeaturesSection>
     </FullPageContainer>
   );
-};
+});
+
+LandingPage.displayName = 'LandingPage';
 
 const FullPageContainer = styled.div`
   min-height: 100vh;

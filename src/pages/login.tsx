@@ -34,8 +34,8 @@ const Form = () => {
     setIsLoading(true);
     setError('');
 
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Reduced delay for faster response
+    await new Promise(resolve => setTimeout(resolve, 300));
 
     // Check if user exists
     const user = demoUsers.find(u => 
@@ -65,18 +65,18 @@ const Form = () => {
       <SpaceBackground>
         <Moon />
         <Stars>
-          {[...Array(50)].map((_, i) => (
-            <Star key={i} delay={i * 0.1} />
+          {[...Array(25)].map((_, i) => (
+            <Star key={i} delay={i * 0.2} />
           ))}
         </Stars>
         <ShootingStars>
-          {[...Array(3)].map((_, i) => (
-            <ShootingStar key={i} delay={i * 2} />
+          {[...Array(2)].map((_, i) => (
+            <ShootingStar key={i} delay={i * 3} />
           ))}
         </ShootingStars>
         <FloatingRocks>
-          {[...Array(8)].map((_, i) => (
-            <Rock key={i} delay={i * 0.5} />
+          {[...Array(4)].map((_, i) => (
+            <Rock key={i} delay={i * 1} />
           ))}
         </FloatingRocks>
       </SpaceBackground>

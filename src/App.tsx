@@ -13,7 +13,7 @@ import LandingPage from './pages/LandingPage';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
-function AppContent() {
+const AppContent = React.memo(() => {
   const location = useLocation();
   const showFooter = location.pathname !== '/' && location.pathname !== '/login';
 
@@ -54,7 +54,9 @@ function AppContent() {
       {showFooter && <Footer />}
     </div>
   );
-}
+});
+
+AppContent.displayName = 'AppContent';
 
 function App() {
   useTheme();
