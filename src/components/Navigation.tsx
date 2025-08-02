@@ -1,13 +1,20 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BarChart3, Plus, Table, Building2, Home, Brain } from 'lucide-react';
+import { BarChart3, Plus, Table, Building2, Home, Brain, LogOut } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
+import { useAuth } from '../contexts/AuthContext';
 
 export const Navigation: React.FC = () => {
   const location = useLocation();
+  const { logout, userEmail } = useAuth();
+
+  // Don't show navigation on landing page or login page
+  if (location.pathname === '/' || location.pathname === '/login') {
+    return null;
+  }
 
   const navItems = [
-    { path: '/', icon: Home, label: 'Dashboard' },
+    { path: '/dashboard', icon: Home, label: 'Dashboard' },
     { path: '/data-entry', icon: Plus, label: 'Data Entry' },
     { path: '/sales-table', icon: Table, label: 'Sales Table' },
     { path: '/prediction', icon: Brain, label: 'Prediction' },
@@ -19,8 +26,10 @@ export const Navigation: React.FC = () => {
       <div className="w-full px-2 sm:px-4 lg:px-8">
         <div className="flex flex-col sm:flex-row items-center justify-between h-auto sm:h-16 py-2 sm:py-0">
           <div className="flex items-center space-x-3 mb-2 sm:mb-0">
-            <BarChart3 className="w-8 h-8 text-blue-600" />
-            <span className="text-xl font-bold text-slate-900 dark:text-white">Dashboard Analytics</span>
+            <Link to="/" className="flex items-center space-x-3">
+              <BarChart3 className="w-8 h-8 text-blue-600" />
+              <span className="text-xl font-bold text-slate-900 dark:text-white">Dashboard Analytics</span>
+            </Link>
           </div>
           <div className="flex flex-wrap items-center space-x-2 sm:space-x-8 w-full sm:w-auto justify-center sm:justify-end">
             {navItems.map(({ path, icon: Icon, label }) => (
@@ -37,6 +46,18 @@ export const Navigation: React.FC = () => {
                 <span className="hidden md:block">{label}</span>
               </Link>
             ))}
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-slate-600 dark:text-slate-300 hidden sm:block">
+                {userEmail}
+              </span>
+              <button
+                onClick={logout}
+                className="flex items-center space-x-2 px-2 sm:px-3 py-2 rounded-lg transition-all duration-200 text-sm sm:text-base text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="hidden md:block">Logout</span>
+              </button>
+            </div>
             <ThemeToggle />
           </div>
         </div>
