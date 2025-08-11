@@ -2,15 +2,18 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { useTheme } from './hooks/useTheme';
 import { Navigation } from './components/Navigation';
-import Dashboard from './pages/Dashboarded7fix (1).tsx'
+import { Dashboard } from './pages/Dashboard';
 import { DataEntry } from './pages/DataEntry';
-import { SalesTable } from './pages/SalesTable_improved.tsx';
-import CustomerPrediction from './pages/enhanced_prediction_component.tsx';
+import { SalesTable } from './pages/SalesTable_improved';
+import CustomerPrediction from './pages/enhanced_prediction_component';
 import { CompanyOverview } from './pages/CompanyOverview';
+import { AdminPanel } from './pages/AdminPanel';
 import { Footer } from './components/Footer';
 import Login from './pages/login';
 import LandingPage from './pages/LandingPage';
 import { AuthProvider } from './contexts/AuthContext';
+import { NotificationProvider } from './contexts/NotificationContext';
+import { DealsProvider } from './contexts/DealsContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 const AppContent = React.memo(() => {
@@ -49,6 +52,11 @@ const AppContent = React.memo(() => {
               <CompanyOverview />
             </ProtectedRoute>
           } />
+          <Route path="/admin" element={
+            <ProtectedRoute>
+              <AdminPanel />
+            </ProtectedRoute>
+          } />
         </Routes>
       </main>
       {showFooter && <Footer />}
@@ -63,9 +71,13 @@ function App() {
 
   return (
     <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
+      <NotificationProvider>
+        <DealsProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </DealsProvider>
+      </NotificationProvider>
     </AuthProvider>
   );
 }

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { Eye, EyeOff, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, ArrowLeft, User, Shield } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
-const Form = () => {
+const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [formData, setFormData] = useState({
@@ -15,18 +15,13 @@ const Form = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-     // Demo user credentials (in a real app, this would be handled by a backend)
-   const demoUsers = [
-     { email: 'admin@space.com', password: 'admin123' }
-   ];
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-    setError(''); // Clear error when user starts typing
+    setError('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -34,23 +29,16 @@ const Form = () => {
     setIsLoading(true);
     setError('');
 
-    // Reduced delay for faster response
-    await new Promise(resolve => setTimeout(resolve, 300));
-
-    // Check if user exists
-    const user = demoUsers.find(u => 
-      u.email.toLowerCase() === formData.email.toLowerCase() && 
-      u.password === formData.password
-    );
-
-    if (user) {
-      // Use the auth context to login
-      login(formData.email);
+    try {
+      const success = await login(formData.email, formData.password);
       
-      // Navigate to dashboard
-      navigate('/dashboard');
-    } else {
-      setError('Invalid email or password. Please try again.');
+      if (success) {
+        navigate('/dashboard');
+      } else {
+        setError('Invalid email or password. Please try again.');
+      }
+    } catch (error) {
+      setError('Login failed. Please try again.');
     }
     
     setIsLoading(false);
@@ -59,6 +47,13 @@ const Form = () => {
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
+
+  const demoAccounts = [
+    { email: 'admin@flashx.com', password: 'admin123', role: 'Admin', icon: Shield },
+    { email: 'john@flashx.com', password: 'sales123', role: 'Sales Agent', icon: User },
+    { email: 'sarah@flashx.com', password: 'sales123', role: 'Sales Agent', icon: User },
+    { email: 'mike@flashx.com', password: 'sales123', role: 'Sales Agent', icon: User }
+  ];
 
   return (
     <FullPageContainer>
@@ -86,12 +81,13 @@ const Form = () => {
         <span>Back to Home</span>
       </BackButton>
 
-             <LoginContainer>
-         <WelcomeMessage>
-           <WelcomeText data-text="WELCOME TO ANALYTIC SPACE">WELCOME TO ANALYTIC SPACE</WelcomeText>
-         </WelcomeMessage>
-         <GlitchFormWrapper>
-           <form className="glitch-card" onSubmit={handleSubmit}>
+      <LoginContainer>
+        <WelcomeMessage>
+          <WelcomeText data-text="FLASHX ANALYTICS LOGIN">FLASHX ANALYTICS LOGIN</WelcomeText>
+        </WelcomeMessage>
+        
+        <GlitchFormWrapper>
+          <form className="glitch-card" onSubmit={handleSubmit}>
             <div className="card-header">
               <div className="card-title">
                 <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -100,10 +96,11 @@ const Form = () => {
                   <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
                   <path d="M12 11.5a3 3 0 0 0 -3 2.824v1.176a3 3 0 0 0 6 0v-1.176a3 3 0 0 0 -3 -2.824z" />
                 </svg>
-                <span>FlashX_ANALYTICS</span>
+                <span>SECURE_ACCESS_PORTAL</span>
               </div>
               <div className="card-dots"><span /><span /><span /></div>
             </div>
+            
             <div className="card-body">
               {error && (
                 <div className="error-message">
@@ -125,37 +122,57 @@ const Form = () => {
                 <label htmlFor="email" className="form-label" data-text="EMAIL_ADDRESS">EMAIL_ADDRESS</label>
               </div>
               
-                             <div className="form-group">
-                 <input 
-                   type={showPassword ? "text" : "password"}
-                   id="password" 
-                   name="password"
-                   value={formData.password}
-                   onChange={handleInputChange}
-                   required 
-                   placeholder=" "
-                 />
-                 <label htmlFor="password" className="form-label" data-text="PASSWORD">PASSWORD</label>
-                 <button
-                   type="button"
-                   onClick={togglePasswordVisibility}
-                   className="password-toggle"
-                 >
-                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                 </button>
-               </div>
+              <div className="form-group">
+                <input 
+                  type={showPassword ? "text" : "password"}
+                  id="password" 
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  required 
+                  placeholder=" "
+                />
+                <label htmlFor="password" className="form-label" data-text="PASSWORD">PASSWORD</label>
+                <button
+                  type="button"
+                  onClick={togglePasswordVisibility}
+                  className="password-toggle"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
               
               <button 
-                data-text={isLoading ? "CONNECTING..." : "INITIATE_CONNECTION"} 
+                data-text={isLoading ? "AUTHENTICATING..." : "INITIATE_ACCESS"} 
                 type="submit" 
                 className="submit-btn"
                 disabled={isLoading}
               >
                 <span className="btn-text">
-                  {isLoading ? "CONNECTING..." : "INITIATE_CONNECTION"}
+                  {isLoading ? "AUTHENTICATING..." : "INITIATE_ACCESS"}
                 </span>
               </button>
               
+              {/* Demo Accounts */}
+              <div className="demo-credentials">
+                <div className="demo-title">DEMO ACCOUNTS</div>
+                <div className="demo-list">
+                  {demoAccounts.map((account, index) => (
+                    <div key={index} className="demo-account" onClick={() => {
+                      setFormData({ email: account.email, password: account.password });
+                    }}>
+                      <div className="demo-account-header">
+                        <account.icon className="w-4 h-4" />
+                        <span>{account.role}</span>
+                      </div>
+                      <div className="demo-account-details">
+                        <div>Email: {account.email}</div>
+                        <div>Password: {account.password}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </form>
         </GlitchFormWrapper>
@@ -296,31 +313,6 @@ const Star = styled.div<{ delay: number }>`
   &:nth-child(23) { top: 42%; left: 95%; }
   &:nth-child(24) { top: 52%; left: 5%; }
   &:nth-child(25) { top: 62%; left: 25%; }
-  &:nth-child(26) { top: 72%; left: 35%; }
-  &:nth-child(27) { top: 82%; left: 45%; }
-  &:nth-child(28) { top: 92%; left: 55%; }
-  &:nth-child(29) { top: 8%; left: 65%; }
-  &:nth-child(30) { top: 18%; left: 75%; }
-  &:nth-child(31) { top: 28%; left: 85%; }
-  &:nth-child(32) { top: 38%; left: 95%; }
-  &:nth-child(33) { top: 48%; left: 5%; }
-  &:nth-child(34) { top: 58%; left: 15%; }
-  &:nth-child(35) { top: 68%; left: 25%; }
-  &:nth-child(36) { top: 78%; left: 35%; }
-  &:nth-child(37) { top: 88%; left: 45%; }
-  &:nth-child(38) { top: 98%; left: 55%; }
-  &:nth-child(39) { top: 6%; left: 65%; }
-  &:nth-child(40) { top: 16%; left: 75%; }
-  &:nth-child(41) { top: 26%; left: 85%; }
-  &:nth-child(42) { top: 36%; left: 95%; }
-  &:nth-child(43) { top: 46%; left: 5%; }
-  &:nth-child(44) { top: 56%; left: 15%; }
-  &:nth-child(45) { top: 66%; left: 25%; }
-  &:nth-child(46) { top: 76%; left: 35%; }
-  &:nth-child(47) { top: 86%; left: 45%; }
-  &:nth-child(48) { top: 96%; left: 55%; }
-  &:nth-child(49) { top: 4%; left: 65%; }
-  &:nth-child(50) { top: 14%; left: 75%; }
 
   @keyframes twinkle {
     0%, 100% { 
@@ -373,12 +365,6 @@ const ShootingStar = styled.div<{ delay: number }>`
     animation-duration: 2.5s;
   }
 
-  &:nth-child(3) {
-    top: 80%;
-    right: 0;
-    animation-duration: 1.8s;
-  }
-
   @keyframes shootingStar {
     0% {
       transform: translateX(0) rotate(315deg);
@@ -414,10 +400,6 @@ const Rock = styled.div<{ delay: number }>`
   &:nth-child(2) { top: 30%; left: 90%; }
   &:nth-child(3) { top: 50%; left: 10%; }
   &:nth-child(4) { top: 70%; left: 80%; }
-  &:nth-child(5) { top: 20%; left: 60%; }
-  &:nth-child(6) { top: 40%; left: 20%; }
-  &:nth-child(7) { top: 60%; left: 70%; }
-  &:nth-child(8) { top: 80%; left: 40%; }
 
   @keyframes float {
     0%, 100% { 
@@ -458,7 +440,7 @@ const BackButton = styled.button`
 
 const LoginContainer = styled.div`
   width: 100%;
-  max-width: 500px;
+  max-width: 600px;
   padding: 2rem;
   z-index: 2;
 `;
@@ -480,38 +462,6 @@ const WelcomeText = styled.h1`
   position: relative;
   animation: welcomeGlow 3s ease-in-out infinite alternate;
 
-  &::before,
-  &::after {
-    content: attr(data-text);
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-      135deg,
-      #0a0a0a 0%,
-      #0d0d0d 25%,
-      #0a0a0a 50%,
-      #050505 75%,
-      #000000 100%
-    );
-  }
-
-  &::before {
-    color: #a855f7;
-    animation: welcomeGlitch 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
-    animation-delay: 2s;
-    animation-iteration-count: infinite;
-  }
-
-  &::after {
-    color: #00f2ea;
-    animation: welcomeGlitch 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) reverse both;
-    animation-delay: 2s;
-    animation-iteration-count: infinite;
-  }
-
   @keyframes welcomeGlow {
     0% {
       text-shadow: 0 0 10px rgba(0, 242, 234, 0.5);
@@ -523,62 +473,32 @@ const WelcomeText = styled.h1`
         0 0 40px rgba(0, 242, 234, 0.4);
     }
   }
-
-  @keyframes welcomeGlitch {
-    0% {
-      transform: translate(0);
-      clip-path: inset(0 0 0 0);
-    }
-    20% {
-      transform: translate(-3px, 2px);
-      clip-path: inset(50% 0 20% 0);
-    }
-    40% {
-      transform: translate(2px, -1px);
-      clip-path: inset(20% 0 60% 0);
-    }
-    60% {
-      transform: translate(-2px, 1px);
-      clip-path: inset(80% 0 5% 0);
-    }
-    80% {
-      transform: translate(1px, -2px);
-      clip-path: inset(30% 0 45% 0);
-    }
-    100% {
-      transform: translate(0);
-      clip-path: inset(0 0 0 0);
-    }
-  }
 `;
 
 const GlitchFormWrapper = styled.div`
-  /* --- Root Variables for the component --- */
   --bg-color: #0d0d0d;
   --primary-color: #00f2ea;
   --secondary-color: #a855f7;
   --text-color: #e5e5e5;
   --font-family: "Fira Code", Consolas, "Courier New", Courier, monospace;
-  --glitch-anim-duration: 0.5s;
 
   display: flex;
   justify-content: center;
   align-items: center;
   font-family: var(--font-family);
-  background-color: transparent;
 
-  /* --- Card Structure --- */
-     .glitch-card {
-     background-color: var(--bg-color);
-     width: 100%;
-     max-width: 880px;
-     border: 2px solid rgba(0, 242, 234, 0.2);
-     box-shadow:
-       0 0 20px rgba(0, 242, 234, 0.1),
-       inset 0 0 10px rgba(0, 0, 0, 0.5);
-     overflow: hidden;
-     margin: 1rem;
-   }
+  .glitch-card {
+    background-color: var(--bg-color);
+    width: 100%;
+    max-width: 500px;
+    border: 2px solid rgba(0, 242, 234, 0.2);
+    box-shadow:
+      0 0 20px rgba(0, 242, 234, 0.1),
+      inset 0 0 10px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+    margin: 1rem;
+    border-radius: 12px;
+  }
 
   .card-header {
     display: flex;
@@ -600,12 +520,6 @@ const GlitchFormWrapper = styled.div`
     gap: 0.5em;
   }
 
-  .card-title svg {
-    width: 1.2em;
-    height: 1.2em;
-    stroke: var(--primary-color);
-  }
-
   .card-dots span {
     display: inline-block;
     width: 8px;
@@ -615,10 +529,9 @@ const GlitchFormWrapper = styled.div`
     margin-left: 5px;
   }
 
-     .card-body {
-     padding: 3rem;
-     min-height: 400px;
-   }
+  .card-body {
+    padding: 2rem;
+  }
 
   .error-message {
     display: flex;
@@ -634,17 +547,16 @@ const GlitchFormWrapper = styled.div`
     backdrop-filter: blur(10px);
   }
 
-  /* --- Form Elements --- */
-     .form-group {
-     position: relative;
-     margin-bottom: 2.5rem;
-   }
+  .form-group {
+    position: relative;
+    margin-bottom: 2rem;
+  }
 
   .form-label {
     position: absolute;
     top: 0.75em;
     left: 0;
-    font-size: 1rem;
+    font-size: 0.9rem;
     color: var(--primary-color);
     opacity: 0.6;
     text-transform: uppercase;
@@ -673,204 +585,108 @@ const GlitchFormWrapper = styled.div`
   .form-group input:focus + .form-label,
   .form-group input:not(:placeholder-shown) + .form-label {
     top: -1.2em;
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     opacity: 1;
   }
 
-  .form-group input:focus + .form-label::before,
-  .form-group input:focus + .form-label::after {
-    content: attr(data-text);
+  .password-toggle {
     position: absolute;
-    top: 0;
-    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: rgba(0, 242, 234, 0.6);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      color: var(--primary-color);
+      background: rgba(0, 242, 234, 0.1);
+    }
+  }
+
+  .submit-btn {
     width: 100%;
-    height: 100%;
-    background-color: var(--bg-color);
-  }
-
-  .form-group input:focus + .form-label::before {
-    color: var(--secondary-color);
-    animation: glitch-anim var(--glitch-anim-duration)
-      cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
-  }
-
-  .form-group input:focus + .form-label::after {
-    color: var(--primary-color);
-    animation: glitch-anim var(--glitch-anim-duration)
-      cubic-bezier(0.25, 0.46, 0.45, 0.94) reverse both;
-  }
-
-  @keyframes glitch-anim {
-    0% {
-      transform: translate(0);
-      clip-path: inset(0 0 0 0);
-    }
-    20% {
-      transform: translate(-5px, 3px);
-      clip-path: inset(50% 0 20% 0);
-    }
-    40% {
-      transform: translate(3px, -2px);
-      clip-path: inset(20% 0 60% 0);
-    }
-    60% {
-      transform: translate(-4px, 2px);
-      clip-path: inset(80% 0 5% 0);
-    }
-    80% {
-      transform: translate(4px, -3px);
-      clip-path: inset(30% 0 45% 0);
-    }
-    100% {
-      transform: translate(0);
-      clip-path: inset(0 0 0 0);
-    }
-  }
-
-     /* --- Password Toggle Button --- */
-   .password-toggle {
-     position: absolute;
-     right: 0;
-     top: 50%;
-     transform: translateY(-50%);
-     background: none;
-     border: none;
-     color: rgba(0, 242, 234, 0.6);
-     cursor: pointer;
-     padding: 4px;
-     border-radius: 4px;
-     transition: all 0.2s ease;
-     z-index: 2;
-
-     &:hover {
-       color: var(--primary-color);
-       background: rgba(0, 242, 234, 0.1);
-     }
-   }
-
-  /* --- Button Styling --- */
-     .submit-btn {
-     width: 100%;
-     padding: 1.2em;
-     margin-top: 2rem;
+    padding: 1rem;
+    margin-top: 1.5rem;
     background-color: transparent;
     border: 2px solid var(--primary-color);
     color: var(--primary-color);
     font-family: inherit;
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.2em;
     cursor: pointer;
     position: relative;
     transition: all 0.3s;
-    overflow: hidden;
+    border-radius: 8px;
 
     &:disabled {
       opacity: 0.6;
       cursor: not-allowed;
     }
+
+    &:hover:not(:disabled) {
+      background-color: var(--primary-color);
+      color: var(--bg-color);
+      box-shadow: 0 0 25px var(--primary-color);
+    }
   }
 
-  .submit-btn:hover:not(:disabled),
-  .submit-btn:focus:not(:disabled) {
-    background-color: var(--primary-color);
-    color: var(--bg-color);
-    box-shadow: 0 0 25px var(--primary-color);
-    outline: none;
-  }
-
-  .submit-btn:active {
-    transform: scale(0.97);
-  }
-
-  /* --- Glitch Effect for Button --- */
-  .submit-btn .btn-text {
-    position: relative;
-    z-index: 1;
-    transition: opacity 0.2s ease;
-  }
-
-  .submit-btn:hover:not(:disabled) .btn-text {
-    opacity: 0;
-  }
-
-  .submit-btn::before,
-  .submit-btn::after {
-    content: attr(data-text);
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    background-color: var(--primary-color);
-    transition: opacity 0.2s ease;
-  }
-
-  .submit-btn:hover:not(:disabled)::before,
-  .submit-btn:focus:not(:disabled)::before {
-    opacity: 1;
-    color: var(--secondary-color);
-    animation: glitch-anim var(--glitch-anim-duration)
-      cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
-  }
-
-  .submit-btn:hover:not(:disabled)::after,
-  .submit-btn:focus:not(:disabled)::after {
-    opacity: 1;
-    color: var(--bg-color);
-    animation: glitch-anim var(--glitch-anim-duration)
-      cubic-bezier(0.25, 0.46, 0.45, 0.94) reverse both;
-  }
-
-  /* --- Demo Credentials --- */
-     .demo-credentials {
-     margin-top: 2.5rem;
-     padding: 1.5rem;
-    background: rgba(0, 242, 234, 0.1);
+  .demo-credentials {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: rgba(0, 242, 234, 0.05);
     border: 1px solid rgba(0, 242, 234, 0.2);
     border-radius: 8px;
   }
 
   .demo-title {
     color: var(--primary-color);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    text-align: center;
+  }
+
+  .demo-account {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 242, 234, 0.1);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      border-color: rgba(0, 242, 234, 0.3);
+      background: rgba(0, 242, 234, 0.05);
+    }
+  }
+
+  .demo-account-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--primary-color);
+    font-size: 0.7rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
   }
 
-  .demo-list {
+  .demo-account-details {
     color: var(--text-color);
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     line-height: 1.4;
     opacity: 0.8;
   }
-
-  .demo-list div {
-    margin-bottom: 2px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .form-group input:focus + .form-label::before,
-    .form-group input:focus + .form-label::after,
-    .submit-btn:hover::before,
-    .submit-btn:focus::before,
-    .submit-btn:hover::after,
-    .submit-btn:focus::after {
-      animation: none;
-      opacity: 0;
-    }
-
-    .submit-btn:hover .btn-text {
-      opacity: 1;
-    }
-  }
 `;
 
-export default Form;
+export default Login;
