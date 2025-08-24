@@ -29,18 +29,21 @@ const Login = () => {
     setIsLoading(true);
     setError('');
 
-    try {
-      const success = await login(formData.email, formData.password);
-      
-      if (success) {
-        navigate('/dashboard');
-      } else {
-        setError('Invalid email or password. Please try again.');
+    // Only allow the specific admin credentials
+    if (formData.email === 'admin@vmax.com' && formData.password === 'admin@VSF') {
+      try {
+        const success = await login(formData.email, formData.password);
+        if (success) {
+          navigate('/dashboard');
+          return;
+        }
+      } catch (error) {
+        console.error('Login error:', error);
       }
-    } catch (error) {
-      setError('Login failed. Please try again.');
     }
     
+    // If we get here, login failed
+    setError('Access denied. Only admin users can log in.');
     setIsLoading(false);
   };
 
@@ -49,10 +52,7 @@ const Login = () => {
   };
 
   const demoAccounts = [
-    { email: 'admin@flashx.com', password: 'admin123', role: 'Admin', icon: Shield },
-    { email: 'john@flashx.com', password: 'sales123', role: 'Sales Agent', icon: User },
-    { email: 'sarah@flashx.com', password: 'sales123', role: 'Sales Agent', icon: User },
-    { email: 'mike@flashx.com', password: 'sales123', role: 'Sales Agent', icon: User }
+    { email: 'admin@vmax.com', password: 'admin@VSF', role: 'Admin', icon: Shield },
   ];
 
   return (
@@ -153,26 +153,6 @@ const Login = () => {
                 </span>
               </button>
               
-              {/* Demo Accounts */}
-              <div className="demo-credentials">
-                <div className="demo-title">DEMO ACCOUNTS</div>
-                <div className="demo-list">
-                  {demoAccounts.map((account, index) => (
-                    <div key={index} className="demo-account" onClick={() => {
-                      setFormData({ email: account.email, password: account.password });
-                    }}>
-                      <div className="demo-account-header">
-                        <account.icon className="w-4 h-4" />
-                        <span>{account.role}</span>
-                      </div>
-                      <div className="demo-account-details">
-                        <div>Email: {account.email}</div>
-                        <div>Password: {account.password}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
           </form>
         </GlitchFormWrapper>
