@@ -19,10 +19,10 @@ interface AuthProviderProps {
 const demoUsers: User[] = [
   {
     id: 'admin-1',
-    email: 'admin@flashx.com',
-    name: 'Admin Manager',
+    email: 'admin@vmax.com',
+    name: 'Admin',
     role: 'admin',
-    avatar: 'AM',
+    avatar: 'AD',
     department: 'Management',
     joinDate: '2024-01-15',
     isActive: true
@@ -61,10 +61,7 @@ const demoUsers: User[] = [
 
 // Demo credentials
 const demoCredentials = [
-  { email: 'admin@flashx.com', password: 'admin123' },
-  { email: 'john@flashx.com', password: 'sales123' },
-  { email: 'sarah@flashx.com', password: 'sales123' },
-  { email: 'mike@flashx.com', password: 'sales123' }
+  { email: 'admin@vmax.com', password: 'admin@VSF' }
 ];
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
