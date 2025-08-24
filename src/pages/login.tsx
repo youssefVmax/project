@@ -51,10 +51,6 @@ const Login = () => {
     setShowPassword(!showPassword);
   };
 
-  const demoAccounts = [
-    { email: 'admin@vmax.com', password: 'admin@VSF', role: 'Admin', icon: Shield },
-  ];
-
   return (
     <FullPageContainer>
       <SpaceBackground>
@@ -83,7 +79,7 @@ const Login = () => {
 
       <LoginContainer>
         <WelcomeMessage>
-          <WelcomeText data-text="FLASHX ANALYTICS LOGIN">FLASHX ANALYTICS LOGIN</WelcomeText>
+          <WelcomeText data-text="Vmax Analytics Login">Vmax Analytics Login</WelcomeText>
         </WelcomeMessage>
         
         <GlitchFormWrapper>

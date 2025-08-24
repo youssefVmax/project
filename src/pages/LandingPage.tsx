@@ -84,7 +84,7 @@ const LandingPage: React.FC = React.memo(() => {
       <Navigation>
         <Logo>
           <BarChart3 className="w-8 h-8" />
-          <span>FlashX Analytics</span>
+          <span>Vmax Analytics</span>
         </Logo>
         <SignInButton onClick={() => navigate('/login')}>
           <span>Sign In</span>
@@ -95,8 +95,8 @@ const LandingPage: React.FC = React.memo(() => {
       {/* Hero Section */}
       <HeroSection>
         <HeroContent>
-          <HeroTitle data-text="FLASH X BUSINESS ANALYTICS">
-            FLASH X BUSINESS ANALYTICS
+          <HeroTitle data-text="Vmax  BUSINESS ANALYTICS">
+            Vmax  BUSINESS ANALYTICS
           </HeroTitle>
           
           <HeroSubtitle>
