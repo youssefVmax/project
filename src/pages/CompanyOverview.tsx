@@ -521,60 +521,6 @@ export const CompanyOverview: React.FC = () => {
           </motion.button>
         </div>
       </motion.div>
-
-      {/* Contact Information */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1.2 }}
-        className="mt-12 text-center bg-gradient-to-r from-blue-50 to-purple-50 dark:from-slate-800 dark:to-slate-900 rounded-2xl p-8 border border-blue-200 dark:border-slate-700"
-      >
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-full w-20 h-20 mx-auto flex items-center justify-center mb-6">
-          <Building2 className="w-10 h-10 text-white" />
-        </div>
-        
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
-          Join the FlashX Experience
-        </h2>
-        <p className="text-slate-600 dark:text-slate-400 mb-6 max-w-2xl mx-auto">
-          Experience the future of television with our premium IPTV services. Contact us to become a reseller
-          or get a personalized demo of our enterprise solutions.
-        </p>
-        
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-200 shadow-lg"
-          >
-            Become a Reseller
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-900 dark:text-white px-8 py-3 rounded-lg font-semibold border border-slate-300 dark:border-slate-600 transition-all duration-200 shadow"
-          >
-            Request Enterprise Demo
-          </motion.button>
-        </div>
-        
-        <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
-          <div className="flex flex-col sm:flex-row justify-center gap-6 text-slate-600 dark:text-slate-400">
-            <div className="flex items-center">
-              <Phone className="w-5 h-5 mr-2" />
-              <span>  </span>
-            </div>
-            <div className="flex items-center">
-              <Mail className="w-5 h-5 mr-2" />
-              <span>info@flashxgroup.com</span>
-            </div>
-            <div className="flex items-center">
-              <MapPin className="w-5 h-5 mr-2" />
-              <span>Brooklyn, New York, USA</span>
-            </div>
-          </div>
-        </div>
-      </motion.div>
     </div>
   );
 };

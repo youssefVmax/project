@@ -6,8 +6,8 @@ import {
   PieChart, Pie, Cell, LineChart, Line, AreaChart, Area, ComposedChart
 } from 'recharts';
 import { 
-  TrendingUp, Users, DollarSign, Award, Filter, Calendar, Target, 
-  BarChart2, BarChart3, Activity, Zap, Star, Crown, User, Building2
+  Shield, User, TrendingUp, Users, DollarSign, Award, Filter, Calendar, Target, 
+  BarChart2, BarChart3, Activity, Zap, Star, Crown, Building2
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useDeals } from '../contexts/DealsContext';
