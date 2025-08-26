@@ -8,6 +8,7 @@ import { SalesTable } from './pages/SalesTable_improved';
 import CustomerPrediction from './pages/enhanced_prediction_component';
 import { CompanyOverview } from './pages/CompanyOverview';
 import { AdminPanel } from './pages/AdminPanel';
+import SalesCompetitionDashboard from './pages/competation';
 import { Footer } from './components/Footer';
 import Login from './pages/login';
 import LandingPage from './pages/LandingPage';
@@ -55,6 +56,11 @@ const AppContent = React.memo(() => {
           <Route path="/admin" element={
             <ProtectedRoute>
               <AdminPanel />
+            </ProtectedRoute>
+          } />
+          <Route path="/competation" element={
+            <ProtectedRoute>
+              <SalesCompetitionDashboard />
             </ProtectedRoute>
           } />
         </Routes>

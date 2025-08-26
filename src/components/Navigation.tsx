@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   BarChart3, Plus, Table, Building2, Home, Brain, LogOut, 
-  Bell, Users, Settings, ChevronDown, User, Shield
+  Bell, Users, Settings, ChevronDown, User, Shield, Trophy
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { NotificationPanel } from './NotificationPanel';
@@ -26,6 +26,7 @@ export const Navigation: React.FC = () => {
       { path: '/dashboard', icon: Home, label: 'Dashboard' },
       { path: '/sales-table', icon: Table, label: 'Sales Table' },
       { path: '/prediction', icon: Brain, label: 'Analytics' },
+      { path: '/competation', icon: Trophy, label: 'Competition' },
       { path: '/company-overview', icon: Building2, label: 'Company' },
     ];
 
