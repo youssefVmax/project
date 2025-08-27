@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Trophy, Medal, Star, TrendingUp, Users, Target, Calendar, Zap, X } from "lucide-react"
+import { useState, useEffect, useRef } from "react"
+import { Trophy, Medal, Star, TrendingUp, Users, Target, Calendar, Zap, X, Upload, FileText, AlertCircle } from "lucide-react"
 import { getAgentAvatar, getTeamLogo, getInitialsAvatar } from "../utils/avatarUtils"
+import * as XLSX from 'xlsx';
 
 interface Deal {
   date: string
@@ -47,6 +48,14 @@ interface TeamStats {
   agents: number
 }
 
+interface FileUploadState {
+  file: File | null;
+  fileName: string;
+  isUploading: boolean;
+  error: string | null;
+  success: boolean;
+}
+
 export default function SalesCompetitionDashboard() {
   const [deals, setDeals] = useState<Deal[]>([])
   const [loading, setLoading] = useState(true)
@@ -54,13 +63,181 @@ export default function SalesCompetitionDashboard() {
   const [showWinnerCards, setShowWinnerCards] = useState(false)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
   const [currentMonth] = useState(new Date().toLocaleString("default", { month: "long", year: "numeric" }))
+  const [fileState, setFileState] = useState<FileUploadState>({
+    file: null,
+    fileName: '',
+    isUploading: false,
+    error: null,
+    success: false
+  })
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const processCSV = (text: string): Deal[] => {
+    const lines = text.split('\n').filter(line => line.trim())
+    if (lines.length < 2) return []
+
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
+    const deals: Deal[] = []
+
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',').map(v => v.trim())
+      const deal: any = {}
+      
+      headers.forEach((header, index) => {
+        if (values[index]) {
+          // Convert amount to number if it's a numeric field
+          if (header.includes('amount') || header.includes('price')) {
+            deal[header] = parseFloat(values[index]) || 0
+          } else {
+            deal[header] = values[index]
+          }
+        }
+      })
+
+      // Map the deal to our Deal interface
+      if (deal.date) {
+        deals.push({
+          date: deal.date,
+          customer_name: deal.customer_name || deal.customer || '',
+          phone_number: deal.phone_number || deal.phone || '',
+          email_address: deal.email_address || deal.email || '',
+          amount: deal.amount || deal.total || 0,
+          user: deal.user || '',
+          address: deal.address || '',
+          sales_agent: deal.sales_agent || deal.agent || '',
+          closing_agent: deal.closing_agent || deal.closer || '',
+          team: deal.team || '',
+          duration: deal.duration || '',
+          type_program: deal.type_program || deal.program || '',
+          type_service: deal.type_service || deal.service || '',
+          invoice: deal.invoice || '',
+          device_id: deal.device_id || '',
+          device_key: deal.device_key || '',
+          comment: deal.comment || '',
+          no_user: deal.no_user || '',
+          status: deal.status || '',
+          sales_agent_norm: (deal.sales_agent || '').toLowerCase(),
+          closing_agent_norm: (deal.closing_agent || '').toLowerCase(),
+          sales_agent_id: deal.sales_agent_id || '',
+          closing_agent_id: deal.closing_agent_id || '',
+          deal_id: deal.deal_id || `deal-${i}`
+        })
+      }
+    }
+
+    return deals
+  }
+
+  const processExcel = (data: ArrayBuffer): Promise<Deal[]> => {
+    return new Promise((resolve) => {
+      const workbook = XLSX.read(data, { type: 'array' })
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
+      const jsonData = XLSX.utils.sheet_to_json<Record<string, any>>(firstSheet)
+      
+      const deals: Deal[] = jsonData.map((row, index) => ({
+        date: row.date || row.Date || '',
+        customer_name: row.customer_name || row.customer || row.Customer || '',
+        phone_number: row.phone_number || row.phone || row.Phone || '',
+        email_address: row.email_address || row.email || row.Email || '',
+        amount: parseFloat(row.amount || row.total || row.Amount || 0) || 0,
+        user: row.user || row.User || '',
+        address: row.address || row.Address || '',
+        sales_agent: row.sales_agent || row.agent || row['Sales Agent'] || '',
+        closing_agent: row.closing_agent || row.closer || row['Closing Agent'] || '',
+        team: row.team || row.Team || '',
+        duration: row.duration || row.Duration || '',
+        type_program: row.type_program || row.program || row.Program || '',
+        type_service: row.type_service || row.service || row.Service || '',
+        invoice: row.invoice || row.Invoice || '',
+        device_id: row.device_id || row.deviceId || '',
+        device_key: row.device_key || row.deviceKey || '',
+        comment: row.comment || row.Comment || '',
+        no_user: row.no_user || '',
+        status: row.status || row.Status || '',
+        sales_agent_norm: (row.sales_agent || '').toString().toLowerCase(),
+        closing_agent_norm: (row.closing_agent || '').toString().toLowerCase(),
+        sales_agent_id: row.sales_agent_id || '',
+        closing_agent_id: row.closing_agent_id || '',
+        deal_id: row.deal_id || `deal-${index + 1}`
+      }))
+
+      resolve(deals)
+    })
+  }
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setFileState({
+      file,
+      fileName: file.name,
+      isUploading: true,
+      error: null,
+      success: false
+    })
+
+    try {
+      const fileExtension = file.name.split('.').pop()?.toLowerCase()
+      let deals: Deal[] = []
+
+      if (fileExtension === 'csv') {
+        const text = await file.text()
+        deals = processCSV(text)
+      } else if (['xls', 'xlsx'].includes(fileExtension || '')) {
+        const arrayBuffer = await file.arrayBuffer()
+        deals = await processExcel(arrayBuffer)
+      } else {
+        throw new Error('Unsupported file format. Please upload a CSV or Excel file.')
+      }
+
+      if (deals.length === 0) {
+        throw new Error('No valid deals found in the uploaded file.')
+      }
+
+      setDeals(deals)
+      setLastUpdate(new Date())
+      setLoading(false)
+
+      setFileState(prev => ({
+        ...prev,
+        isUploading: false,
+        success: true,
+        error: null
+      }))
+
+      // Show celebration if there are deals
+      if (deals.length > 0) {
+        setCelebrating(true)
+        setShowWinnerCards(true)
+        setTimeout(() => setCelebrating(false), 5000)
+      }
+    } catch (error) {
+      console.error('Error processing file:', error)
+      setFileState(prev => ({
+        ...prev,
+        isUploading: false,
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to process file'
+      }))
+    } finally {
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click()
+  }
 
   useEffect(() => {
     const fetchDeals = async () => {
       try {
         console.log("[v0] Starting to fetch deals from CSV...")
         const response = await fetch(
-          "/data/aug-ids-new.csv",
+          "/data/Aug-deals-ids.csv",
         )
         const csvText = await response.text()
         console.log("[v0] CSV text length:", csvText.length)
@@ -501,19 +678,86 @@ export default function SalesCompetitionDashboard() {
                 <Calendar className="h-3 w-3 mr-1" />
                 {currentMonth}
               </span>
+              {deals.length > 0 && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200 text-xs font-medium">
+                  {deals.length} deals loaded
+                </span>
+              )}
             </div>
-
             <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">Last Updated</p>
-                <p className="text-sm font-medium">{lastUpdate.toLocaleTimeString()}</p>
-              </div>
-              <button type="button" onClick={triggerCelebration} className="bg-primary hover:bg-primary/90">
-                <Zap className="h-4 w-4 mr-2" />
-                Celebrate!
+              {/* Hidden file input */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                accept=".csv,.xlsx,.xls"
+                className="hidden"
+              />
+              
+              <button
+                onClick={triggerFileInput}
+                disabled={fileState.isUploading}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {fileState.isUploading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Data
+                  </>
+                )}
               </button>
+
+              {deals.length > 0 && (
+                <>
+                  <button
+                    onClick={() => setShowWinnerCards(true)}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-accent to-accent/80 hover:from-accent/90 hover:to-accent/70 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
+                  >
+                    <Trophy className="h-4 w-4 mr-2" />
+                    View Winners
+                  </button>
+                  <button
+                    onClick={() => setCelebrating(!celebrating)}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                  >
+                    <Zap className="h-4 w-4 mr-2" />
+                    {celebrating ? 'Stop Celebration' : 'Celebrate'}
+                  </button>
+                </>
+              )}
             </div>
           </div>
+          
+          {/* Upload status */}
+          {fileState.error && (
+            <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 rounded-md text-sm flex items-start">
+              <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium">Error processing file</p>
+                <p>{fileState.error}</p>
+              </div>
+            </div>
+          )}
+          
+          {fileState.success && (
+            <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-md text-sm flex items-start">
+              <svg className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <div>
+                <p className="font-medium">Success!</p>
+                <p>Successfully processed {deals.length} deals from {fileState.fileName}</p>
+              </div>
+            </div>
+          )}
         </div>
       </header>
 

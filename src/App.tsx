@@ -48,6 +48,11 @@ const AppContent = React.memo(() => {
               <CustomerPrediction />
             </ProtectedRoute>
           } />
+          <Route path="/competition" element={
+            <ProtectedRoute>
+              <SalesCompetitionDashboard />
+            </ProtectedRoute>
+          } />
           <Route path="/company-overview" element={
             <ProtectedRoute>
               <CompanyOverview />

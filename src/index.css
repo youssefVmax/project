@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+.text-accent {
+  color: white;
+  @apply text-white dark:text-white;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
